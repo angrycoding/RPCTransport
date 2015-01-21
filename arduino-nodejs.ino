@@ -1,15 +1,18 @@
 #include "RPCTransport.h"
 
+int32_t x = 0;
 RPCTransport transport(Serial);
 
 void turnOn(RPCRequest &request, RPCResponse &response) {
 	digitalWrite(14, HIGH);
-	response.pushBool(true);
+	response.pushInt(x++);
+	response.pushValue(request[5]);
 }
 
 void turnOff(RPCRequest &request, RPCResponse &response) {
 	digitalWrite(14, LOW);
-	response.pushBool(true);
+	// response.pushBool(true);
+	response.pushInt(x++);
 }
 
 void setup() {

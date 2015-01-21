@@ -40,17 +40,19 @@ private:
 
 protected:
 
-	void unshiftNull() { unshift(new RPCValue()); }
-	void unshiftBool(bool value) { unshift(new RPCValue(value)); }
-	void unshiftFloat(float value) { unshift(new RPCValue(value)); }
-	void unshiftInt(int32_t value) { unshift(new RPCValue(value)); }
-	void unshiftString(char* value) { unshift(new RPCValue(value)); }
-
 	void pushNull() { push(new RPCValue()); }
 	void pushBool(bool value) { push(new RPCValue(value)); }
 	void pushFloat(float value) { push(new RPCValue(value)); }
 	void pushInt(int32_t value) { push(new RPCValue(value)); }
 	void pushString(char* value) { push(new RPCValue(value)); }
+	void pushValue(RPCValue* value) { push(new RPCValue(value)); }
+
+	void unshiftNull() { unshift(new RPCValue()); }
+	void unshiftBool(bool value) { unshift(new RPCValue(value)); }
+	void unshiftFloat(float value) { unshift(new RPCValue(value)); }
+	void unshiftInt(int32_t value) { unshift(new RPCValue(value)); }
+	void unshiftString(char* value) { unshift(new RPCValue(value)); }
+	void unshiftValue(RPCValue* value) { unshift(new RPCValue(value)); }
 
 public:
 

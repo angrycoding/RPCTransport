@@ -23,6 +23,13 @@ public:
 	const byte &type;
 	enum {Null, Bool, Float, Int, String};
 
+
+	RPCValue(RPCValue* value): type(_type) {
+		if ((_type = value->_type) == String)
+			vString = strdup(value->vString);
+		else vInt = value->vInt;
+	}
+
 	RPCValue(): type(_type) { _type = Null; }
 	RPCValue(bool value): type(_type) { _type = Bool; vBool = value; }
 	RPCValue(float value): type(_type) { _type = Float; vFloat = value; }
