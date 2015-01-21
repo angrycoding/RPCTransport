@@ -175,55 +175,11 @@ public:
 	}
 
 	void writeResponse(RPCRequest &request) {
-
 		stream->write(0x7B);
 		stream->write(0x7B);
-		stream->write(request.length);
-
-		for (byte c = 0; c < request.length; c++) {
-			RPCValue* value = request[c];
-			switch (value->type) {
-
-				case RPCValue::Null: {
-					stream->write(value->_type);
-					break;
-				}
-
-				case RPCValue::Bool: {
-					byte buffer[2] = {value->_type, value->vBool ? 1 : 0};
-					stream->write(buffer, 2);
-					break;
-				}
-
-				case RPCValue::Float: {
-					byte buffer[5] = {value->_type};
-					*reinterpret_cast<float*>(&buffer[1]) = value->vFloat;
-					stream->write(buffer, 5);
-					break;
-				}
-
-				case RPCValue::Int: {
-					byte buffer[5] = {value->_type};
-					*reinterpret_cast<int32_t*>(&buffer[1]) = value->vInt;
-					stream->write(buffer, 5);
-					break;
-				}
-
-				case RPCValue::String: {
-					byte length = strlen(value->vString);
-					byte buffer[2 + length];
-					buffer[0] = value->_type, buffer[1] = length;
-					memcpy(&buffer[2], value->vString, length);
-					stream->write(buffer, 2 + length);
-					break;
-				}
-
-			}
-		}
-
+		request.write(stream);
 		stream->write(0x7D);
 		stream->write(0x7D);
-
 	}
 
 };

@@ -38,6 +38,13 @@ private:
 		size = 0;
 	}
 
+	void write(Stream* stream) {
+		stream->write(size);
+		for (byte c = 0; c < size; c++) {
+			arguments[c]->write(stream);
+		}
+	}
+
 protected:
 
 	void pushNull() { push(new RPCValue()); }
