@@ -3,6 +3,9 @@
 int32_t x = 0;
 RPCTransport transport(Serial);
 
+// RPCRequest req;
+// RPCValue val((bool)true);
+// RPCResponse res;
 
 void turnOn(RPCRequest &request, RPCResponse &response) {
 	digitalWrite(14, HIGH);

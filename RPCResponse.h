@@ -1,9 +1,13 @@
 #ifndef RPCResponse_h
 #define RPCResponse_h
 
-#include "RPCRequest.h"
-
 class RPCResponse: public RPCRequest {
+
+friend class RPCTransport;
+
+private:
+
+	RPCResponse(): RPCRequest() {}
 
 public:
 
@@ -22,5 +26,6 @@ public:
 	void unshiftValue(RPCValue* value) { RPCRequest::unshiftValue(value); }
 
 };
+
 
 #endif

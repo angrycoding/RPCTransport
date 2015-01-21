@@ -1,8 +1,6 @@
 #ifndef RPCValue_h
 #define RPCValue_h
 
-#include "RPCRequest.h"
-
 class RPCValue {
 
 friend class RPCRequest;

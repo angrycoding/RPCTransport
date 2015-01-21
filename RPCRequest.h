@@ -1,17 +1,19 @@
 #ifndef RPCRequest_h
 #define RPCRequest_h
 
-#include "RPCTransport.h"
-#include "RPCValue.h"
-
 class RPCRequest {
 
 friend class RPCTransport;
+friend class RPCResponse;
 
 private:
 
 	byte size;
 	RPCValue** arguments;
+
+	// add allocation capability (no need to fuck with array if request size is known)
+	RPCRequest(): length(size) { size = 0; arguments = NULL; }
+	~RPCRequest() { clear(); }
 
 	void push(RPCValue* value) {
 		RPCValue** newBuffer = new RPCValue*[++size];
@@ -64,9 +66,6 @@ protected:
 public:
 
 	const byte &length;
-	// add allocation capability (no need to fuck with array if request size is known)
-	RPCRequest(): length(size) { size = 0; arguments = NULL; }
-	~RPCRequest() { clear(); }
 
 	RPCValue* operator[](byte index) {
 		return arguments[index];
@@ -74,6 +73,7 @@ public:
 
 
 };
+
 
 
 #endif
