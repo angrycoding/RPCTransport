@@ -91,9 +91,11 @@ public:
 				if (arguments == NULL)
 					arguments = new RPCRequest();
 				else arguments->clear();
-				if (argCount = stream->read())
+				if (argCount = stream->read()) {
+					arguments->reserve(argCount);
 					state = STATE_ARGUMENT_START;
-				else state = STATE_END;
+				} else state = STATE_END;
+
 				break;
 			}
 

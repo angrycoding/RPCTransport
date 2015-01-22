@@ -8,42 +8,50 @@ friend class RPCResponse;
 
 private:
 
-	byte size;
+	byte count;
+	byte reserved;
 	RPCValue** arguments;
 	static RPCValue nullValue;
 
-	// add allocation capability (no need to fuck with array if request size is known)
-	RPCRequest(): length(size) { size = 0; arguments = NULL; }
+	RPCRequest(): length(count) { count = 0; reserved = 0; arguments = NULL; }
 	~RPCRequest() { clear(); }
 
-	void push(RPCValue* value) {
-		RPCValue** newBuffer = new RPCValue*[++size];
-		for (byte i = 0; i < size - 1; ++i)
-			newBuffer[i] = arguments[i];
-		newBuffer[size - 1] = value;
+	void reserve(byte size) {
+		if (size <= count) return;
+		RPCValue** buffer = new RPCValue*[reserved = size];
+		for (byte i = 0; i < count; ++i)
+			buffer[i] = arguments[i];
 		delete[] arguments;
-		arguments = newBuffer;
+		arguments = buffer;
+	}
+
+	void push(RPCValue* value) {
+		bool alloc = (reserved < count++);
+		RPCValue** buffer = (alloc ? new RPCValue*[count] : arguments);
+		if (alloc) for (byte i = 0; i < count - 1; ++i) buffer[i] = arguments[i];
+		buffer[count - 1] = value;
+		if (alloc) delete[] arguments, arguments = buffer;
 	}
 
 	void unshift(RPCValue* value) {
-		RPCValue** newBuffer = new RPCValue*[++size];
-		for (byte i = size - 1; i > 0; --i)
-			newBuffer[i] = arguments[i - 1];
-		newBuffer[0] = value;
-		delete[] arguments;
-		arguments = newBuffer;
+		bool alloc = (reserved < count++);
+		RPCValue** buffer = (alloc ? new RPCValue*[count] : arguments);
+		for (byte i = count - 1; i > 0; --i) buffer[i] = arguments[i - 1];
+		buffer[0] = value;
+		if (alloc) delete[] arguments, arguments = buffer;
 	}
 
 	void clear() {
-		while (size--) delete arguments[size];
+		while (count--) delete arguments[count];
 		delete[] arguments;
 		arguments = NULL;
-		size = 0;
+		reserved = 0;
+		count = 0;
 	}
 
 	void write(Stream* stream) {
-		stream->write(size);
-		for (byte c = 0; c < size; ++c) {
+		stream->write(count);
+		for (byte c = 0; c < count; ++c) {
 			arguments[c]->write(stream);
 		}
 	}
@@ -68,14 +76,13 @@ public:
 
 	const byte &length;
 
-
-	byte getType(byte index) { return (index < size ? arguments[index]->vType : RPCValue::Null); }
-	bool getType(byte index, byte type) { return (index < size ? arguments[index]->vType : RPCValue::Null) == type; }
-	bool getBool(byte index, bool value = false) { return (index < size ? arguments[index]->getBool(value) : value); }
-	float getFloat(byte index, float value = 0) { return (index < size ? arguments[index]->getFloat(value) : value); }
-	int32_t getInt(byte index, int32_t value = 0) { return (index < size ? arguments[index]->getInt(value) : value); }
-	const char* getString(byte index, const char value[] = "") { return (index < size ? arguments[index]->getString(value) : value); }
-	const RPCValue* getValue(byte index) { return (index < size ? arguments[index] : &nullValue); }
+	byte getType(byte index) { return (index < count ? arguments[index]->vType : RPCValue::Null); }
+	bool getType(byte index, byte type) { return (index < count ? arguments[index]->vType : RPCValue::Null) == type; }
+	bool getBool(byte index, bool value = false) { return (index < count ? arguments[index]->getBool(value) : value); }
+	float getFloat(byte index, float value = 0) { return (index < count ? arguments[index]->getFloat(value) : value); }
+	int32_t getInt(byte index, int32_t value = 0) { return (index < count ? arguments[index]->getInt(value) : value); }
+	const char* getString(byte index, const char value[] = "") { return (index < count ? arguments[index]->getString(value) : value); }
+	const RPCValue* getValue(byte index) { return (index < count ? arguments[index] : &nullValue); }
 
 };
 
