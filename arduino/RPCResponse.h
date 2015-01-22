@@ -17,7 +17,6 @@ public:
 	void pushInt(int32_t value) { RPCRequest::pushInt(value); }
 	void pushString(char* value) { RPCRequest::pushString(value); }
 	void pushValue(const RPCValue* value) { RPCRequest::pushValue(value); }
-
 	void unshiftNull() { RPCRequest::unshiftNull(); }
 	void unshiftBool(bool value) { RPCRequest::unshiftBool(value); }
 	void unshiftFloat(float value) { RPCRequest::unshiftFloat(value); }
