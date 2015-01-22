@@ -1,7 +1,6 @@
 #ifndef RPCTransport_h
 #define RPCTransport_h
 
-#include "Arduino.h"
 #include "RPCValue.h"
 #include "RPCRequest.h"
 #include "RPCResponse.h"
