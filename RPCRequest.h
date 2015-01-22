@@ -42,7 +42,7 @@ private:
 
 	void write(Stream* stream) {
 		stream->write(size);
-		for (byte c = 0; c < size; c++) {
+		for (byte c = 0; c < size; ++c) {
 			arguments[c]->write(stream);
 		}
 	}
