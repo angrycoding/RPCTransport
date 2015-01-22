@@ -10,20 +10,15 @@ class RPCTransport {
 
 private:
 
-	enum State {
-		STATE_START,
-		STATE_ARGUMENTS,
-		STATE_ARGUMENT_START,
-		STATE_NULL,
-		STATE_BOOL,
-		STATE_FLOAT,
-		STATE_INT,
-		STATE_STRING,
-		STATE_ARGUMENT_END,
-		STATE_END
+	enum {
+		STATE_START = 20,
+		STATE_ARGUMENTS = 21,
+		STATE_ARGUMENT_START = 22,
+		STATE_ARGUMENT_END = 23,
+		STATE_END = 24
 	};
 
-	State state;
+	byte state;
 	byte argCount;
 	Stream *stream;
 	RPCRequest* arguments;
@@ -105,32 +100,25 @@ public:
 			}
 
 			case STATE_ARGUMENT_START: {
-				// GET RID OF THIS SWITCH BY USING RPCValue::Types
-				switch (stream->peek()) {
-					case RPCValue::Null: state = STATE_NULL; break;
-					case RPCValue::Bool: state = STATE_BOOL; break;
-					case RPCValue::Float: state = STATE_FLOAT; break;
-					case RPCValue::Int: state = STATE_INT; break;
-					case RPCValue::String: state = STATE_STRING; break;
-					default: state = STATE_START; continue;
-				}
-				stream->read();
+				if (stream->peek() < STATE_START)
+					state = stream->read();
+				else state = STATE_START;
 				break;
 			}
 
-			case STATE_NULL: {
+			case RPCValue::Null: {
 				arguments->pushNull();
 				state = STATE_ARGUMENT_END;
 				break;
 			}
 
-			case STATE_BOOL: {
+			case RPCValue::Bool: {
 				arguments->pushBool(!!stream->read());
 				state = STATE_ARGUMENT_END;
 				break;
 			}
 
-			case STATE_FLOAT: {
+			case RPCValue::Float: {
 				if (size < 4) return;
 				char buffer[4];
 				stream->readBytes(buffer, 4);
@@ -139,7 +127,7 @@ public:
 				break;
 			}
 
-			case STATE_INT: {
+			case RPCValue::Int: {
 				if (size < 4) return;
 				char buffer[4];
 				stream->readBytes(buffer, 4);
@@ -148,7 +136,7 @@ public:
 				break;
 			}
 
-			case STATE_STRING: {
+			case RPCValue::String: {
 				if (size < stream->peek()) return;
 				char value[(size = stream->read()) + 1];
 				stream->readBytes(value, size);

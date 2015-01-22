@@ -73,7 +73,7 @@ private:
 
 public:
 
-	enum {Null, Bool, Float, Int, String};
+	enum {Null = 0, Bool = 1, Float = 2, Int = 3, String = 4};
 	byte getType() const { return vType; }
 	bool getType(byte type) const { return vType == type; }
 	bool getBool(bool value = false) const { return (vType == Bool ? vBool : value); }
