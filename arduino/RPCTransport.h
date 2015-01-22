@@ -1,6 +1,7 @@
 #ifndef RPCTransport_h
 #define RPCTransport_h
 
+#include "Arduino.h"
 #include "RPCValue.h"
 #include "RPCRequest.h"
 #include "RPCResponse.h"
@@ -33,8 +34,8 @@ private:
 	void handleRequest(RPCRequest &request, RPCResponse &response) {
 		if (request.length &&
 			request[0]->type == RPCValue::Int &&
-			handlers[request[0]->vInt] != NULL) {
-			handlers[request[0]->vInt](request, response);
+			handlers[request[0]->getInt()] != NULL) {
+			handlers[request[0]->getInt()](request, response);
 			response.unshiftString("RET");
 		}
 		else response.pushString("NOT_SUPPORTED");
