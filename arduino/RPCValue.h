@@ -22,7 +22,8 @@ private:
 	RPCValue(float value) { vType = Float; vFloat = value; }
 	RPCValue(int32_t value) { vType = Int; vInt = value; }
 	RPCValue(char value[]) { vType = String; vString = strdup(value); }
-	RPCValue(RPCValue* &value) {
+
+	RPCValue(const RPCValue* &value) {
 		if ((vType = value->vType) == String)
 			vString = strdup(value->vString);
 		else vInt = value->vInt;
