@@ -11,14 +11,14 @@ class RPCTransport {
 private:
 
 	enum State {
+		STATE_START,
+		STATE_ARGUMENTS,
+		STATE_ARGUMENT_START,
 		STATE_NULL,
 		STATE_BOOL,
 		STATE_FLOAT,
 		STATE_INT,
 		STATE_STRING,
-		STATE_START,
-		STATE_ARGUMENTS,
-		STATE_ARGUMENT_START,
 		STATE_ARGUMENT_END,
 		STATE_END
 	};
@@ -71,6 +71,11 @@ public:
 
 		RPCResponse response;
 		response.pushString("$BEGIN");
+		response.pushNull();
+		response.pushBool(true);
+		response.pushBool(false);
+		response.pushFloat(3.14);
+		response.pushInt(42);
 		writeResponse(response);
 
 	}
@@ -100,6 +105,7 @@ public:
 			}
 
 			case STATE_ARGUMENT_START: {
+				// GET RID OF THIS SWITCH BY USING RPCValue::Types
 				switch (stream->peek()) {
 					case RPCValue::Null: state = STATE_NULL; break;
 					case RPCValue::Bool: state = STATE_BOOL; break;
