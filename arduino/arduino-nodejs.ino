@@ -9,16 +9,21 @@ RPCTransport transport(Serial);
 
 void turnOn(RPCRequest &request, RPCResponse &response) {
 	digitalWrite(14, HIGH);
-	response.pushInt(x++);
+	// response.pushInt(x++);
 	// request.getValue(5);
 	// qDebug() << request.getType(0);
-	response.pushValue(request.getValue(5));
+	for (byte c = 0; c < request.length; c++)
+		response.pushValue(request.getValue(c));
+	response.pushValue(request.getValue(92));
 }
 
 void turnOff(RPCRequest &request, RPCResponse &response) {
 	digitalWrite(14, LOW);
 	// response.pushBool(true);
-	response.pushInt(x++);
+	// response.pushInt(x++);
+	for (byte c = 0; c < request.length; c++)
+		response.pushValue(request.getValue(c));
+	response.pushValue(request.getValue(92));
 }
 
 void setup() {
