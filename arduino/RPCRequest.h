@@ -64,7 +64,6 @@ protected:
 	void pushInt(int32_t value) { push(new RPCValue(value)); }
 	void pushString(char* value) { push(new RPCValue(value)); }
 	void pushValue(const RPCValue* value) { push(new RPCValue(value)); }
-
 	void unshiftNull() { unshift(new RPCValue()); }
 	void unshiftBool(bool value) { unshift(new RPCValue(value)); }
 	void unshiftFloat(float value) { unshift(new RPCValue(value)); }
@@ -75,7 +74,6 @@ protected:
 public:
 
 	const byte &length;
-
 	byte getType(byte index) { return (index < count ? arguments[index]->vType : RPCValue::Null); }
 	bool getType(byte index, byte type) { return (index < count ? arguments[index]->vType : RPCValue::Null) == type; }
 	bool getBool(byte index, bool value = false) { return (index < count ? arguments[index]->getBool(value) : value); }
