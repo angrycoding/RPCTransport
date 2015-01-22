@@ -26,7 +26,7 @@ private:
 	}
 
 	void push(RPCValue* value) {
-		bool alloc = (reserved < count++);
+		bool alloc = (reserved < ++count);
 		RPCValue** buffer = (alloc ? new RPCValue*[count] : arguments);
 		if (alloc) for (byte i = 0; i < count - 1; ++i) buffer[i] = arguments[i];
 		buffer[count - 1] = value;
@@ -34,7 +34,7 @@ private:
 	}
 
 	void unshift(RPCValue* value) {
-		bool alloc = (reserved < count++);
+		bool alloc = (reserved < ++count);
 		RPCValue** buffer = (alloc ? new RPCValue*[count] : arguments);
 		for (byte i = count - 1; i > 0; --i) buffer[i] = arguments[i - 1];
 		buffer[0] = value;
