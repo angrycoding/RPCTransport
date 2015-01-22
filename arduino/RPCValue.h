@@ -16,7 +16,6 @@ private:
 		char* vString;
 	};
 
-
 	RPCValue() { vType = Null; }
 	RPCValue(bool value) { vType = Bool; vBool = value; }
 	RPCValue(float value) { vType = Float; vFloat = value; }
@@ -75,10 +74,8 @@ private:
 public:
 
 	enum {Null, Bool, Float, Int, String};
-
 	byte getType() const { return vType; }
 	bool getType(byte type) const { return vType == type; }
-
 	bool getBool(bool value = false) const { return (vType == Bool ? vBool : value); }
 	float getFloat(float value = 0) const { return (vType == Float ? vFloat : value); }
 	int32_t getInt(int32_t value = 0) const { return (vType == Int ? vInt : value); }
