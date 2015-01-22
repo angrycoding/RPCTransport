@@ -32,10 +32,10 @@ private:
 	Handler handlers[10];
 
 	void handleRequest(RPCRequest &request, RPCResponse &response) {
-		if (request.length &&
-			request[0]->type == RPCValue::Int &&
-			handlers[request[0]->getInt()] != NULL) {
-			handlers[request[0]->getInt()](request, response);
+		char handler = request.getInt(0, -1);
+		if (handler >= 0 &&
+			handlers[handler] != NULL) {
+			handlers[handler](request, response);
 			response.unshiftString("RET");
 		}
 		else response.pushString("NOT_SUPPORTED");

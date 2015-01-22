@@ -17,13 +17,12 @@ private:
 	};
 
 
-	RPCValue(): type(vType) { vType = Null; }
-	RPCValue(const bool value): type(vType) { vType = Bool; vBool = value; }
-	RPCValue(const float value): type(vType) { vType = Float; vFloat = value; }
-	RPCValue(const int32_t value): type(vType) { vType = Int; vInt = value; }
-	RPCValue(const char value[]): type(vType) { vType = String; vString = strdup(value); }
-
-	RPCValue(const RPCValue* &value): type(vType) {
+	RPCValue() { vType = Null; }
+	RPCValue(bool value) { vType = Bool; vBool = value; }
+	RPCValue(float value) { vType = Float; vFloat = value; }
+	RPCValue(int32_t value) { vType = Int; vInt = value; }
+	RPCValue(char value[]) { vType = String; vString = strdup(value); }
+	RPCValue(RPCValue* &value) {
 		if ((vType = value->vType) == String)
 			vString = strdup(value->vString);
 		else vInt = value->vInt;
@@ -74,14 +73,15 @@ private:
 
 public:
 
-	const byte &type;
 	enum {Null, Bool, Float, Int, String};
 
+	byte getType() const { return vType; }
+	bool getType(byte type) const { return vType == type; }
 
-	bool getBool(const bool value = false) { return (vType == Bool ? vBool : value); }
-	float getFloat(const float value = 0) { return (vType == Float ? vFloat : value); }
-	int32_t getInt(const int32_t value = 0) { return (vType == Int ? vInt : value); }
-	const char* getString(const char value[] = "") { return (vType == String ? vString : value); }
+	bool getBool(bool value = false) const { return (vType == Bool ? vBool : value); }
+	float getFloat(float value = 0) const { return (vType == Float ? vFloat : value); }
+	int32_t getInt(int32_t value = 0) const { return (vType == Int ? vInt : value); }
+	const char* getString(const char value[] = "") const { return (vType == String ? vString : value); }
 
 };
 

@@ -10,7 +10,9 @@ RPCTransport transport(Serial);
 void turnOn(RPCRequest &request, RPCResponse &response) {
 	digitalWrite(14, HIGH);
 	response.pushInt(x++);
-	response.pushValue(request[5]);
+	// request.getValue(5);
+	// qDebug() << request.getType(0);
+	response.pushValue(request.getValue(5));
 }
 
 void turnOff(RPCRequest &request, RPCResponse &response) {
