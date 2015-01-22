@@ -26,32 +26,32 @@ private:
 
 		switch (_type) {
 
-			case RPCValue::Null: {
+			case Null: {
 				stream->write(_type);
 				break;
 			}
 
-			case RPCValue::Bool: {
+			case Bool: {
 				byte buffer[2] = {_type, vBool ? 1 : 0};
 				stream->write(buffer, 2);
 				break;
 			}
 
-			case RPCValue::Float: {
+			case Float: {
 				byte buffer[5] = {_type};
 				*reinterpret_cast<float*>(&buffer[1]) = vFloat;
 				stream->write(buffer, 5);
 				break;
 			}
 
-			case RPCValue::Int: {
+			case Int: {
 				byte buffer[5] = {_type};
 				*reinterpret_cast<int32_t*>(&buffer[1]) = vInt;
 				stream->write(buffer, 5);
 				break;
 			}
 
-			case RPCValue::String: {
+			case String: {
 				byte length = strlen(vString);
 				byte buffer[2 + length];
 				buffer[0] = _type, buffer[1] = length;
