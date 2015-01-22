@@ -61,6 +61,9 @@ public:
 		writeResponse(response);
 	}
 
+#define VA_NUM_ARGS(...) VA_NUM_ARGS_IMPL(__VA_ARGS__, 5,4,3,2,1)
+#define VA_NUM_ARGS_IMPL(_1,_2,_3,_4,_5,N,...) N
+
 	void begin() {
 
 		RPCResponse response;
@@ -70,6 +73,7 @@ public:
 		response.pushBool(false);
 		response.pushFloat(3.14);
 		response.pushInt(42);
+		response.pushInt(VA_NUM_ARGS(1, 2, 3, "STRING"));
 		writeResponse(response);
 
 	}
