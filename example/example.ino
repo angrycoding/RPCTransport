@@ -27,12 +27,25 @@ void turnOff(RPCRequest &request, RPCResponse &response) {
 	response.pushValue(request.getValue(92));
 }
 
+// #define RPCall(...) call((RPCValue[]){__VA_ARGS__}, strlen(#__VA_ARGS__) ? RPCTransport_num_args(__VA_ARGS__) : 0)
+// #define RPCTransport_num_args(...) RPCTransport_num_args_impl(__VA_ARGS__, 5,4,3,2,1)
+// #define RPCTransport_num_args_impl(_1,_2,_3,_4,_5,N,...) N
+
+
 void setup() {
 	pinMode(14, OUTPUT);
 	Serial.begin(115200);
-	transport.on("turnOn", turnOn);
-	transport.on("turnOff", turnOff);
-	transport.begin();
+
+	// RPCTransport* x = new RPCTransport(Serial);
+	// RPCRequest(x, "who are you?");
+	RPCRequest(transport, "what the fuck?");
+
+
+	// transport.RPCall("hello", "world");
+	// RPCall((int32_t)10, (float)3.14, "hello");
+	// transport.on("turnOn", turnOn);
+	// transport.on("turnOff", turnOff);
+	// transport.begin();
 }
 
 void serialEvent() {
