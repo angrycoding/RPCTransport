@@ -3,8 +3,7 @@
 
 class RPCValue {
 
-	friend class RPCRequest;
-	friend class RPCTransport;
+	friend class RPCPacket;
 
 	private:
 
@@ -22,11 +21,11 @@ class RPCValue {
 		RPCValue(int32_t value) { vType = Int; vInt = value;  }
 		RPCValue(char value[]) { vType = String; vString = strdup(value); }
 
-		RPCValue(const RPCValue* &value) {
-			if ((vType = value->vType) == String)
-				vString = strdup(value->vString);
-			else vInt = value->vInt;
-		}
+		// RPCValue(const RPCValue* &value) {
+		// 	if ((vType = value->vType) == String)
+		// 		vString = strdup(value->vString);
+		// 	else vInt = value->vInt;
+		// }
 
 		RPCValue(const RPCValue &value) {
 			if ((vType = value.vType) == String)
