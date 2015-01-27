@@ -119,8 +119,16 @@ RPCTransport.prototype.parsePacket = function() {
 					var xBuff = [];
 					Array.prototype.push.apply(xBuff, new Buffer('{{'));
 					Array.prototype.push.apply(xBuff, [1]);
-					Array.prototype.push.apply(xBuff, [TYPE_STRING, '$RET'.length]);
-					Array.prototype.push.apply(xBuff, new Buffer('$RET'));
+
+					Array.prototype.push.apply(xBuff, [TYPE_INT32, 0x20, 0x00, 0x00, 0x00]);
+
+					// 52 69 84 0 // ret
+
+
+					// Array.prototype.push.apply(xBuff, new Buffer('$RET'));
+
+					// Array.prototype.push.apply(xBuff, [TYPE_STRING, '$RET'.length]);
+					// Array.prototype.push.apply(xBuff, new Buffer('$RET'));
 					// Array.prototype.push.apply(xBuff, [TYPE_BOOL, !!boolArgs]);
 					Array.prototype.push.apply(xBuff, new Buffer('}}'));
 					that.serialPort.write(xBuff, function() {});

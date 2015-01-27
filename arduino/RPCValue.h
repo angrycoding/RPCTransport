@@ -3,44 +3,41 @@
 
 class RPCValue {
 
-	friend class RPCPacket;
-
 	private:
 
 		byte vType;
-		enum {Null = 0, Bool = 1, Float = 2, Int = 3, String = 4};
 		union {bool vBool; float vFloat; int32_t vInt; char* vString;};
 
 	public:
 
-		RPCValue() { vType = Null; }
-		RPCValue(bool value) { vType = Bool; vBool = value; }
-		RPCValue(float value) { vType = Float; vFloat = value; }
-		RPCValue(double value) { vType = Float; vFloat = (float)value; }
-		RPCValue(int16_t value) { vType = Int; vInt = (int32_t)value;  }
-		RPCValue(int32_t value) { vType = Int; vInt = value;  }
-		RPCValue(char value[]) { vType = String; vString = strdup(value); }
+		RPCValue() { vType = RPC_NULL; }
+		RPCValue(bool value) { vType = RPC_BOOL; vBool = value; }
+		RPCValue(float value) { vType = RPC_FLOAT; vFloat = value; }
+		RPCValue(double value) { vType = RPC_FLOAT; vFloat = (float)value; }
+		RPCValue(int16_t value) { vType = RPC_INT; vInt = (int32_t)value;  }
+		RPCValue(int32_t value) { vType = RPC_INT; vInt = value;  }
+		RPCValue(const char value[]) { vType = RPC_STRING; vString = strdup(value); }
 
-		// RPCValue(const RPCValue* &value) {
-		// 	if ((vType = value->vType) == String)
-		// 		vString = strdup(value->vString);
-		// 	else vInt = value->vInt;
-		// }
+		RPCValue(const RPCValue* &value) {
+			if ((vType = value->vType) == RPC_STRING)
+				vString = strdup(value->vString);
+			else vInt = value->vInt;
+		}
 
 		RPCValue(const RPCValue &value) {
-			if ((vType = value.vType) == String)
+			if ((vType = value.vType) == RPC_STRING)
 				vString = strdup(value.vString);
 			else vInt = value.vInt;
 		}
 
-		~RPCValue() { if (vType == String) delete vString; }
+		~RPCValue() { if (vType == RPC_STRING) delete vString; }
 
 		byte getType() const { return vType; }
 		bool getType(byte type) const { return vType == type; }
-		bool getBool(bool value = false) const { return (vType == Bool ? vBool : value); }
-		float getFloat(float value = 0) const { return (vType == Float ? vFloat : value); }
-		int32_t getInt(int32_t value = 0) const { return (vType == Int ? vInt : value); }
-		const char* getString(const char value[] = "") const { return (vType == String ? vString : value); }
+		bool getBool(bool value = false) const { return (vType == RPC_BOOL ? vBool : value); }
+		float getFloat(float value = 0) const { return (vType == RPC_FLOAT ? vFloat : value); }
+		int32_t getInt(int32_t value = 0) const { return (vType == RPC_INT ? vInt : value); }
+		const char* getString(const char value[] = "") const { return (vType == RPC_STRING ? vString : value); }
 
 };
 
