@@ -36,6 +36,8 @@ class RPCTransport: private RPCPacket {
 				command = packet->getInt(0);
 				if (command == RPC_CMD_CALL) {
 
+					handlers[packet->getInt(1)](packet);
+
 				}
 			}
 			return command;

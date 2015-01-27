@@ -1,0 +1,9 @@
+{
+	"name": "arduino-node-rpc",
+	"version": "0.0.0",
+	"description": "Arduino - Node.js - RPC over serial",
+	"main": "RPCTransport.js",
+	"dependencies": {
+		"socket.io": "latest"
+	}
+}

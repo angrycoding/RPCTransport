@@ -3,17 +3,10 @@
 
 RPCTransport transport(&Serial);
 
-void changeState(RPCPacket* stream) {
-
-	// packet->clear();
-	// packet->pushString("RESULT_STRING");
-	// digitalWrite(14, HIGH);
-	// response.pushInt(x++);
-	// request.getValue(5);
-	// qDebug() << request.getType(0);
-	// for (byte c = 0; c < request.length; c++)
-		// response.pushValue(request.getValue(c));
-	// response.pushValue(request.getValue(92));
+void changeState(RPCPacket* packet) {
+	digitalWrite(14, packet->getBool(2));
+	packet->clear();
+	packet->pushBool(digitalRead(14));
 }
 
 void setup() {
@@ -21,11 +14,10 @@ void setup() {
 	digitalWrite(15, HIGH);
 	Serial.begin(115200);
 	transport.on("changeState", changeState);
-	transport.on("changeState2", changeState);
 }
 
 
-// void serialEvent() { rpcReader.process(); }
+void serialEvent() { transport.process(); }
 
 bool state = true;
 int32_t valx = 0;

@@ -199,4 +199,16 @@ RPCTransport.prototype.send = function() {
 	this.serialPort.write(xBuff);
 };
 
+RPCTransport.prototype.call = function(id, arg) {
+	var xBuff = [];
+	Array.prototype.push.apply(xBuff, new Buffer('{{'));
+	Array.prototype.push.apply(xBuff, [3]);
+	Array.prototype.push.apply(xBuff, [TYPE_INT32, 0x10, 0x00, 0x00, 0x00]);
+	Array.prototype.push.apply(xBuff, [TYPE_INT32, id, 0x00, 0x00, 0x00]);
+	Array.prototype.push.apply(xBuff, [TYPE_BOOL, Number(!!arg)]);
+	Array.prototype.push.apply(xBuff, new Buffer('}}'));
+	console.info('RPCTransport.prototype.call', xBuff);
+	this.serialPort.write(xBuff);
+};
+
 module.exports = RPCTransport;
