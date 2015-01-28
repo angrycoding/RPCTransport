@@ -2,8 +2,28 @@
 <script type="text/javascript">
 	var socket = io.connect('http://localhost:9999');
 	var state = false;
-	function changeState() {
-		socket.emit('changeState', state = !state);
+
+	socket.on('changed', function(args, ret) {
+		document.body.style.backgroundColor = (args[0] ? '' : 'red');
+		ret();
+	})
+
+	function changeState(sender) {
+		socket.emit('rpc:call', 'toggleLed', [], function(state) {
+			sender.value = (state ? 'TURN OFF' : 'TURN ON');
+		});
 	}
+
+	function changeLed(state) {
+		socket.emit('rpc:call', 'changeLed', state);
+	}
+
+	function changeDelay(delay) {
+		socket.emit('rpc:call', 'changeDelay', parseInt(delay));
+	}
+
 </script>
-<input type="button" value="change state" onclick="changeState()" />
+
+<input type="button" value="change state" onclick="changeState(this)" />
+<input type="button" value="TURN ON" onclick="changeLed(true)" />
+<input type="button" value="TURN OFF" onclick="changeLed(false)" />

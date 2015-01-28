@@ -179,6 +179,24 @@ class RPCPacket {
 			count = 0;
 		}
 
+		RPCPacket* remove(int8_t index) {
+
+			if (index > 0) {
+
+				RPCValue** buffer = new RPCValue*[count - index];
+				for (byte i = 0; i < count; ++i) {
+					if (i < index) delete values[i];
+					else buffer[i - index] = values[i];
+				}
+				count-= index;
+				delete [] values, values = buffer;
+
+			}
+
+			return this;
+
+		}
+
 		void pushNull() { push(new RPCValue()); }
 		void pushBool(const bool value) { push(new RPCValue(value)); }
 		void pushFloat(const float value) { push(new RPCValue(value)); }

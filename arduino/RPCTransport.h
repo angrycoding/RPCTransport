@@ -34,7 +34,7 @@ class RPCTransport: private RPCPacket {
 		bool canBindHandlers;
 
 
-		byte processCommand(RPCPacket* packet) {
+		byte processPacket(RPCPacket* packet) {
 			byte command = 0;
 			if (packet->read(stream)) {
 				command = packet->getInt(0);
@@ -43,12 +43,13 @@ class RPCTransport: private RPCPacket {
 					begin(bindHandlers);
 				}
 
-				if (false);
-
 				else if (command == RPC_CMD_CALL) {
-
-					handlers[packet->getInt(1)](packet);
-
+					byte handlerIndex = packet->getInt(1);
+					byte resultIndex = packet->getInt(2);
+					handlers[handlerIndex](packet->remove(3));
+					packet->unshiftInt(resultIndex);
+					packet->unshiftInt(RPC_CMD_RET);
+					packet->write(stream);
 				}
 
 			}
@@ -82,7 +83,7 @@ class RPCTransport: private RPCPacket {
 
 		}
 
-		void process() { processCommand(this); }
+		void process() { processPacket(this); }
 
 		void on(const char value[], Handler handler) {
 			if (canBindHandlers) {
@@ -101,7 +102,7 @@ class RPCTransport: private RPCPacket {
 			request.reserve(count);
 			for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
 			request.unshiftInt(RPC_CMD_CALL), request.write(stream);
-			while (processCommand(&request) != RPC_CMD_RET);
+			while (processPacket(&request) != RPC_CMD_RET);
 			return request;
 		}
 

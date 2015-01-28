@@ -94,16 +94,14 @@ function Transport(comName, baudRate) {
 
 	var serialPort = new SerialPort(comName, {baudRate: baudRate}, false);
 
-	serialPort.on('data', function(data) {
-		self.processIncoming(data);
-	});
+	serialPort.on('data', function(data) { self.processIncoming(data); });
 
 	serialPort.on('open', function() {
 		serialPort.write(createPacket(RPC_CMD_READY));
-		serialPort.emit('data', createPacket(RPC_CMD_BIND, "changeState", 0));
-		serialPort.emit('data', createPacket(RPC_CMD_BIND, "hello", 1));
-		serialPort.emit('data', createPacket(RPC_CMD_READY));
-		serialPort.emit('data', createPacket(RPC_CMD_CALL, "someNodeJSMethod", 1, 2, 3));
+		// serialPort.emit('data', createPacket(RPC_CMD_BIND, "changeState", 0));
+		// serialPort.emit('data', createPacket(RPC_CMD_BIND, "hello", 1));
+		// serialPort.emit('data', createPacket(RPC_CMD_READY));
+		// serialPort.emit('data', createPacket(RPC_CMD_CALL, "someNodeJSMethod", 1, 2, 3));
 	});
 
 	serialPort.on('close', function() {
@@ -134,13 +132,14 @@ Transport.prototype.processPacket = function(data) {
 
 	else if (argValues[0] === RPC_CMD_CALL) {
 		console.info('RPC_CMD_CALL', argValues);
-		if (!this.emit(argValues[1], argValues.slice(1), function() {
+		if (!this.emit(argValues[1], argValues.slice(2), function() {
 			serialPort.write(createPacket(RPC_CMD_RET, arguments));
 		})) serialPort.write(createPacket(RPC_CMD_RET));
 	}
 
 	else if (argValues[0] === RPC_CMD_RET) {
 		console.info('RPC_CMD_RET', argValues);
+		callReturn(argValues[1], argValues.slice(2));
 	}
 
 	else {
@@ -227,6 +226,55 @@ Transport.prototype.processIncoming = function(data) {
 
 	this.state = state;
 	this.argCount = argCount;
+
+};
+
+
+
+
+
+var addressPool = [];
+var nextAddress = 0;
+var returnCallbacks = {};
+
+const ADDRESS_POOL_SIZE = 20;
+for (var c = 1; c < ADDRESS_POOL_SIZE; c++)
+	addressPool.push(c);
+
+function saveReturn(callbackFunc) {
+	var address = addressPool[nextAddress++];
+	if (typeof callbackFunc !== 'function') callbackFunc = null;
+	returnCallbacks[address] = callbackFunc;
+	return address;
+}
+
+function callReturn(callbackAddress, args) {
+	if (returnCallbacks.hasOwnProperty(callbackAddress)) {
+		var callbackFunc = returnCallbacks[callbackAddress];
+		delete returnCallbacks[callbackAddress];
+		addressPool[--nextAddress] = callbackAddress;
+		if (typeof callbackFunc === 'function') {
+			callbackFunc.apply(null, args);
+		}
+	}
+}
+
+
+
+Transport.prototype.call = function(name, args, ret) {
+
+	var packet = [];
+	var bindings = this.bindings;
+	var serialPort = this.serialPort;
+
+	if (bindings.hasOwnProperty(name)) {
+		packet.push(RPC_CMD_CALL);
+		packet.push(bindings[name]);
+		packet.push(saveReturn(ret));
+		Array.prototype.push.apply(packet, [].concat(args));
+		packet = createPacket(packet);
+		serialPort.write(packet);
+	}
 
 };
 
