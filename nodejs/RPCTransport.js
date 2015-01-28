@@ -1,173 +1,227 @@
 var SerialPort = require('serialport').SerialPort;
-
-const TYPE_NULL = 0;
-const TYPE_BOOL = 1;
-const TYPE_FLOAT = 2;
-const TYPE_INT32 = 3;
-const TYPE_STRING = 4;
-
-const STATE_START = 10;
-const STATE_ARGUMENTS = 11;
-const STATE_ARGUMENT_START = 12;
-const STATE_ARGUMENT_END = 13;
-const STATE_END = 14;
+var EventEmitter = require('events').EventEmitter;
 
 
-function RPCTransport(port, baudrate) {
+const WAIT_INTERVAL = 250;
 
-	var that = this;
-	this.state = STATE_START;
-	this.argValues = [];
-	this.argCount = 0;
-	var buffer = this.buffer = [];
-	var serialPort = new SerialPort(port, {baudrate: baudrate}, false);
+const RPC_NULL = 0;
+const RPC_BOOL = 1;
+const RPC_FLOAT = 2;
+const RPC_INT = 3;
+const RPC_STRING = 4;
 
-	serialPort.on('data', function(data) {
-		// console.info(JSON.stringify(data));
-		// console.info(data.toString());
-		Array.prototype.push.apply(buffer, data);
-		that.parsePacket();
+const RPC_START = 5;
+const RPC_ARGUMENTS = 6;
+const RPC_ARGUMENT = 7;
+const RPC_END = 8;
+
+const RPC_CMD_CALL = 0x10;
+const RPC_CMD_RET = 0x20;
+const RPC_CMD_BIND = 0x30;
+const RPC_CMD_READY = 0x40;
+
+
+function waitConnection(serialPort) {
+	serialPort.open(function(error) {
+		if (error) setTimeout(
+			waitConnection,
+			WAIT_INTERVAL,
+			serialPort
+		);
 	});
-
-	this.serialPort = serialPort;
 }
 
-RPCTransport.prototype.parsePacket = function() {
+function createPacket() {
 
-	var that = this;
-	var buffer = this.buffer;
-	var state = this.state;
-	var argCount = this.argCount;
+	var arg, temp, buffer = [0x7B, 0x7B, 0],
+		args = Array.prototype.slice.call(arguments);
+
+	while (args.length) {
+
+		arg = args.shift();
+
+		if (arg === undefined || arg === null) {
+			buffer.push(RPC_NULL);
+			buffer[2]++;
+		}
+
+		else if (typeof arg === 'boolean') {
+			buffer.push(RPC_BOOL, Number(arg));
+			buffer[2]++;
+		}
+
+		else if (typeof arg === 'number') {
+			temp = new Buffer(4);
+			if (arg % 1) {
+				buffer.push(RPC_FLOAT);
+				temp.writeFloatLE(arg, 0);
+			} else {
+				buffer.push(RPC_INT);
+				temp.writeInt32LE(arg, 0);
+			}
+			Array.prototype.push.apply(buffer, temp);
+			buffer[2]++;
+		}
+
+		else if (typeof arg === 'string') {
+			temp = new Buffer(arg);
+			buffer.push(RPC_STRING, temp.length);
+			Array.prototype.push.apply(buffer, temp);
+			buffer[2]++;
+		}
+
+		else if (arg instanceof Object) {
+			arg = Array.prototype.slice.call(arg);
+			Array.prototype.unshift.apply(args, arg);
+		}
+
+	}
+
+	buffer.push(0x7D, 0x7D);
+	return buffer;
+}
+
+
+function Transport(comName, baudRate) {
+
+	var self = this;
+
+	this.buffer = [];
+	this.argCount = 0;
+	this.argValues = [];
+	this.state = RPC_START;
+	this.bindings = {};
+
+	var serialPort = new SerialPort(comName, {baudRate: baudRate}, false);
+
+	serialPort.on('data', function(data) {
+		self.processIncoming(data);
+	});
+
+	serialPort.on('open', function() {
+		serialPort.write(createPacket(RPC_CMD_READY));
+		serialPort.emit('data', createPacket(RPC_CMD_BIND, "changeState", 0));
+		serialPort.emit('data', createPacket(RPC_CMD_BIND, "hello", 1));
+		serialPort.emit('data', createPacket(RPC_CMD_READY));
+		serialPort.emit('data', createPacket(RPC_CMD_CALL, "someNodeJSMethod", 1, 2, 3));
+	});
+
+	serialPort.on('close', function() {
+		// this.canSend = false;
+	});
+
+
+	waitConnection(this.serialPort = serialPort);
+
+}
+
+Transport.prototype = Object.create(EventEmitter.prototype);
+
+
+Transport.prototype.processPacket = function(data) {
+
 	var argValues = this.argValues;
+	var serialPort = this.serialPort;
 
-	var available;
+	if (argValues[0] === RPC_CMD_BIND) {
+		console.info('RPC_CMD_BIND', argValues);
+		this.bindings[argValues[1]] = argValues[2];
+	}
+
+	else if (argValues[0] === RPC_CMD_READY) {
+		console.info('RPC_CMD_READY', argValues);
+	}
+
+	else if (argValues[0] === RPC_CMD_CALL) {
+		console.info('RPC_CMD_CALL', argValues);
+		if (!this.emit(argValues[1], argValues.slice(1), function() {
+			serialPort.write(createPacket(RPC_CMD_RET, arguments));
+		})) serialPort.write(createPacket(RPC_CMD_RET));
+	}
+
+	else if (argValues[0] === RPC_CMD_RET) {
+		console.info('RPC_CMD_RET', argValues);
+	}
+
+	else {
+		console.info('processPacket', argValues);
+	}
+
+};
+
+Transport.prototype.processIncoming = function(data) {
+
+	var available,
+		gotPacket = false,
+		state = this.state,
+		buffer = this.buffer,
+		argCount = this.argCount,
+		argValues = this.argValues;
+
+	Array.prototype.push.apply(buffer, data);
 
 	loop: while (available = buffer.length) switch (state) {
 
-		case STATE_START: {
+		case RPC_START: {
 			if (available < 2) break loop;
 			if (buffer.shift() == 0x7B && buffer.shift() == 0x7B)
-				state = STATE_ARGUMENTS;
+				state = RPC_ARGUMENTS;
 			break;
 		}
 
-		case STATE_ARGUMENTS: {
+		case RPC_ARGUMENTS: {
 			if (argValues.length = 0, argCount = buffer.shift())
-				state = STATE_ARGUMENT_START;
-			else state = STATE_END;
+				state = RPC_ARGUMENT;
+			else state = RPC_END;
 			break;
 		}
 
-		case STATE_ARGUMENT_START: {
-			if (buffer[0] < STATE_START)
-				state = buffer.shift();
-			else state = STATE_START;
+		case RPC_ARGUMENT: {
+			if (buffer[0] < RPC_START) {
+				if (state = buffer.shift(), RPC_NULL == state) {
+					argValues.push(null);
+					state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
+				}
+			} else state = RPC_START;
 			break;
 		}
 
-		case TYPE_NULL: {
-			argValues.push(null);
-			state = STATE_ARGUMENT_END;
-			break;
-		}
-
-		case TYPE_BOOL: {
+		case RPC_BOOL: {
 			argValues.push(!!buffer.shift());
-			state = STATE_ARGUMENT_END;
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
 			break;
 		}
 
-		case TYPE_FLOAT: {
+		case RPC_FLOAT: {
 			if (available < 4) break loop;
 			argValues.push(new Buffer(buffer.splice(0, 4)).readFloatLE(0));
-			state = STATE_ARGUMENT_END;
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
 			break;
 		}
 
-		case TYPE_INT32: {
+		case RPC_INT: {
 			if (available < 4) break loop;
 			argValues.push(new Buffer(buffer.splice(0, 4)).readInt32LE(0));
-			state = STATE_ARGUMENT_END;
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
 			break;
 		}
 
-		case TYPE_STRING: {
-			if (available < 1 || available - 1 < buffer[0]) break loop;
+		case RPC_STRING: {
+			if (available - 1 < buffer[0]) break loop;
 			argValues.push(new Buffer(buffer.splice(0, buffer.shift())).toString());
-			state = STATE_ARGUMENT_END;
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
 			break;
 		}
 
-		case STATE_ARGUMENT_END: {
-			if (argValues.length < argCount)
-				state = STATE_ARGUMENT_START;
-			else state = STATE_END;
-			break;
-		}
-
-		case STATE_END: {
+		case RPC_END: {
 			if (available < 2) break loop;
-			state = STATE_START;
+			state = RPC_START;
 			if (buffer[0] == 0x7D) buffer.shift(); else break;
 			if (buffer[0] == 0x7D) buffer.shift(); else break;
-
-			console.info('arduino says', argValues);
-
-			// if (argValues[0] === '$CALL') {
-			// 	this.handleCall.call(this, argValues.slice(1), function(boolArgs) {
-
-					var xBuff = [];
-					Array.prototype.push.apply(xBuff, new Buffer('{{'));
-					Array.prototype.push.apply(xBuff, [1]);
-
-					Array.prototype.push.apply(xBuff, [TYPE_INT32, 0x20, 0x00, 0x00, 0x00]);
-
-					// 52 69 84 0 // ret
-
-
-					// Array.prototype.push.apply(xBuff, new Buffer('$RET'));
-
-					// Array.prototype.push.apply(xBuff, [TYPE_STRING, '$RET'.length]);
-					// Array.prototype.push.apply(xBuff, new Buffer('$RET'));
-					// Array.prototype.push.apply(xBuff, [TYPE_BOOL, !!boolArgs]);
-					Array.prototype.push.apply(xBuff, new Buffer('}}'));
-					that.serialPort.write(xBuff, function() {});
-
-			// 	});
-			// }
-
-
-			// // Array.prototype.push.apply(xBuff, [TYPE_STRING, '$CALL'.length]);
-			// // Array.prototype.push.apply(xBuff, new Buffer('$CALL'));
-
-			// Array.prototype.push.apply(xBuff, [TYPE_STRING, '$RET'.length]);
-			// Array.prototype.push.apply(xBuff, new Buffer('$RET'));
-
-			// // Array.prototype.push.apply(xBuff, [TYPE_BOOL, 0]);
-			// Array.prototype.push.apply(xBuff, new Buffer('}}'));
-			// this.serialPort.write(xBuff);
-
-			// if (argValues[0] === '$ATTACH') {
-			// 	attached[argValues[1]] = argValues[2];
-			// 	continue;
-			// }
-
-			// else if (argValues[0] === '$BEGIN') {
-			// 	doCall();
-			// }
-
-			// else {
-			// 	doCall();
-			// }
-
-			// console.clear();
-			// setTimeout(xfoo, 100);
-			// xfoo();
-			// break loop;
+			this.processPacket();
 			break;
 		}
 
-		default: throw 'x';
 
 	}
 
@@ -176,39 +230,5 @@ RPCTransport.prototype.parsePacket = function() {
 
 };
 
-RPCTransport.prototype.open = function(handleCall) {
-	this.handleCall = handleCall;
-	this.serialPort.open(function(error) {
-		if (error) console.info('error', error);
-		console.info('connected');
-	});
-};
 
-RPCTransport.prototype.send = function() {
-	console.info('RPCTransport.prototype.send');
-	var xBuff = [];
-	Array.prototype.push.apply(xBuff, new Buffer('{{'));
-	Array.prototype.push.apply(xBuff, [2]);
-
-	Array.prototype.push.apply(xBuff, [TYPE_STRING, '$CALL'.length]);
-	Array.prototype.push.apply(xBuff, new Buffer('$CALL'));
-
-	Array.prototype.push.apply(xBuff, [TYPE_BOOL, 1]);
-
-	Array.prototype.push.apply(xBuff, new Buffer('}}'));
-	this.serialPort.write(xBuff);
-};
-
-RPCTransport.prototype.call = function(id, arg) {
-	var xBuff = [];
-	Array.prototype.push.apply(xBuff, new Buffer('{{'));
-	Array.prototype.push.apply(xBuff, [3]);
-	Array.prototype.push.apply(xBuff, [TYPE_INT32, 0x10, 0x00, 0x00, 0x00]);
-	Array.prototype.push.apply(xBuff, [TYPE_INT32, id, 0x00, 0x00, 0x00]);
-	Array.prototype.push.apply(xBuff, [TYPE_BOOL, Number(!!arg)]);
-	Array.prototype.push.apply(xBuff, new Buffer('}}'));
-	console.info('RPCTransport.prototype.call', xBuff);
-	this.serialPort.write(xBuff);
-};
-
-module.exports = RPCTransport;
+module.exports = Transport;
