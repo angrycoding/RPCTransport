@@ -1,6 +1,6 @@
 # Arduino-Node-RPC
 
-Provides easy way to organize two - way communication between Arduino and Node.js:
+Provides easy way to organize two - way communication between Arduino and Node.js, uses the serial port as transport layer:
 
 ```c++
 // include library
