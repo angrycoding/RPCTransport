@@ -1,6 +1,5 @@
 #include "../arduino/RPCTransport.h"
 
-
 RPCTransport transport(&Serial);
 
 void changeState(RPCPacket* packet) {
@@ -9,11 +8,15 @@ void changeState(RPCPacket* packet) {
 	packet->pushBool(digitalRead(14));
 }
 
+void registerMethods() {
+	transport.on("changeState", changeState);
+}
+
 void setup() {
 	pinMode(14, OUTPUT);
 	digitalWrite(15, HIGH);
 	Serial.begin(115200);
-	transport.on("changeState", changeState);
+	transport.begin(registerMethods);
 }
 
 

@@ -14,6 +14,7 @@
 #define RPC_CMD_CALL 0x10
 #define RPC_CMD_RET 0x20
 #define RPC_CMD_BIND 0x30
+#define RPC_CMD_READY 0x40
 
 #define RPC_MAX_ARGS 16
 
@@ -25,20 +26,31 @@ class RPCTransport: private RPCPacket {
 	private:
 
 		typedef void(*Handler)(RPCPacket*);
+		typedef void(*BindHandler)(void);
 		Handler handlers[5];
 		byte handlerIndex;
 		Stream* stream;
+		BindHandler bindHandlers;
+		bool canBindHandlers;
 
 
 		byte processCommand(RPCPacket* packet) {
 			byte command = 0;
 			if (packet->read(stream)) {
 				command = packet->getInt(0);
-				if (command == RPC_CMD_CALL) {
+
+				if (command == RPC_CMD_READY) {
+					begin(bindHandlers);
+				}
+
+				if (false);
+
+				else if (command == RPC_CMD_CALL) {
 
 					handlers[packet->getInt(1)](packet);
 
 				}
+
 			}
 			return command;
 		}
@@ -48,21 +60,40 @@ class RPCTransport: private RPCPacket {
 		RPCTransport(Stream* serial) {
 			stream = serial;
 			handlerIndex = 0;
-			for (byte c = 0; c < 5; ++c) {
-				handlers[c] = NULL;
+			bindHandlers = NULL;
+			canBindHandlers = false;
+		}
+
+		void begin(BindHandler handler) {
+
+			handlerIndex = 0;
+			for (byte c = 0; c < 5; ++c) handlers[c] = NULL;
+
+			if (handler != NULL) {
+				canBindHandlers = true;
+				(bindHandlers = handler)();
+				canBindHandlers = false;
 			}
+
+			RPCPacket request;
+			request.pushInt(RPC_CMD_READY);
+			request.write(stream);
+
+
 		}
 
 		void process() { processCommand(this); }
 
 		void on(const char value[], Handler handler) {
-			handlers[handlerIndex] = handler;
-			RPCPacket request;
-			request.reserve(3);
-			request.pushInt(RPC_CMD_BIND);
-			request.pushString(value);
-			request.pushInt(handlerIndex++);
-			request.write(stream);
+			if (canBindHandlers) {
+				handlers[handlerIndex] = handler;
+				RPCPacket request;
+				request.reserve(3);
+				request.pushInt(RPC_CMD_BIND);
+				request.pushString(value);
+				request.pushInt(handlerIndex++);
+				request.write(stream);
+			}
 		}
 
 		RPCPacket call(RPCValue args[], byte count) {
@@ -89,6 +120,7 @@ class RPCTransport: private RPCPacket {
 #undef RPC_CMD_CALL
 #undef RPC_CMD_RET
 #undef RPC_CMD_BIND
+#undef RPC_CMD_READY
 
 #define RPCPacket(transport, ...) (((RPCTransport&)transport).call((RPCValue[]){__VA_ARGS__}, strlen(#__VA_ARGS__) ? RPCPacket_Num_Args(__VA_ARGS__) : 0));
 #define RPCPacket_Num_Args(...) RPCPacket_Num_Args_Impl(__VA_ARGS__,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
