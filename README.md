@@ -52,29 +52,3 @@ void serialEvent() {
 	transport.process();
 }
 ```
-
-Include the library and instantiate RPCTransport with appropriate Serial:
-
-```c++
-// include library
-#include "RPCTransport.h"
-// instantiate RPCTransport and attach it to desired Serial
-RPCTransport transport(&Serial);
-```
-
-Register methods that you want to make public (can be called by Node.js). There are couple of problems that I've been trying to solve here. First one is: what should be used as keys when registering those methods? Using numbers as keys works faster and uses less memory, but it's less convinient than string keys. Using strings solves the problem but it needs more RAM, access time is also slower. Second problem is that usually when you are connecting to Arduino over serial port, it's going to be automatically restarted, so anything that you sent to it after connection and before it's started - will be lost, and the only way to deal with it, is hardware modifications (not that difficult but you would do that only when you finished your project). To solve first problem, library transparently stores callback map on Node.js side, this way we don't need to waist Arduino RAM and in the same time provide fast lookups. Second problem is solved by providing special "internal" method, that will be called once Arduino is ready for communication, letting Node.js know that everything is set up, and no packets will be lost due the autorestart. At the end, all you need to do is to call RPCTransport::begin when you ready to communicate with the other side, passing it method that is registering all you callbacks:
-
-```c++
-void registerMethods() {
-	transport.on("setState", setState);
-	transport.on("getState", getState);
-	...
-}
-
-void setup() {
-	// initialize Serial
-	Serial.begin(115200);
-	// initialize RPCTransport
-	transport.begin(registerMethods);
-}
-```
