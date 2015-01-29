@@ -3,6 +3,8 @@
 
 class RPCValue {
 
+	friend class RPCPacket;
+
 	private:
 
 		byte vType;
@@ -14,8 +16,8 @@ class RPCValue {
 		RPCValue(bool value) { vType = RPC_BOOL; vBool = value; }
 		RPCValue(float value) { vType = RPC_FLOAT; vFloat = value; }
 		RPCValue(double value) { vType = RPC_FLOAT; vFloat = (float)value; }
-		RPCValue(int16_t value) { vType = RPC_INT; vInt = (int32_t)value;  }
-		RPCValue(int32_t value) { vType = RPC_INT; vInt = value;  }
+		RPCValue(int16_t value) { vType = RPC_INT; vInt = (int32_t)value; }
+		RPCValue(int32_t value) { vType = RPC_INT; vInt = value; }
 		RPCValue(const char value[]) { vType = RPC_STRING; vString = strdup(value); }
 
 		RPCValue(const RPCValue* value) {
