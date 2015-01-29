@@ -8,8 +8,9 @@
 #define RPC_STRING 4
 #define RPC_START 5
 #define RPC_ARGUMENTS 6
-#define RPC_ARGUMENT 7
-#define RPC_END 8
+#define RPC_ARGUMENT_START 7
+#define RPC_ARGUMENT_END 8
+#define RPC_END 9
 
 #define RPC_CMD_CALL 0x10
 #define RPC_CMD_RET 0x20
@@ -59,17 +60,12 @@ class RPCTransport: private RPCPacket {
 
 	public:
 
-		RPCTransport(Stream* serial) {
-			stream = serial;
-			handlerIndex = 0;
-			bindHandlers = NULL;
-			canBindHandlers = false;
-		}
+		RPCTransport(Stream* serial): stream(serial), handlerIndex(0), bindHandlers(NULL), canBindHandlers(false) {}
 
 		void begin(BindHandler handler) {
 
-			handlerIndex = 0;
-			for (byte c = 0; c < 5; ++c) handlers[c] = NULL;
+			while (handlerIndex)
+				handlers[--handlerIndex] = NULL;
 
 			if (handler != NULL) {
 				canBindHandlers = true;
