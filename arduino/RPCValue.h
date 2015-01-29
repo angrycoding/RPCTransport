@@ -18,7 +18,7 @@ class RPCValue {
 		RPCValue(int32_t value) { vType = RPC_INT; vInt = value;  }
 		RPCValue(const char value[]) { vType = RPC_STRING; vString = strdup(value); }
 
-		RPCValue(const RPCValue* &value) {
+		RPCValue(const RPCValue* value) {
 			if ((vType = value->vType) == RPC_STRING)
 				vString = strdup(value->vString);
 			else vInt = value->vInt;
