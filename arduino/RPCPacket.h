@@ -17,52 +17,54 @@ class RPCPacket {
 		static RPCValue nullValue;
 
 		void push(RPCValue* value) {
-			bool alloc = (reserved < ++count);
-			RPCValue** buffer = (alloc ? new RPCValue*[count] : values);
-			if (alloc) for (byte i = 0; i < count - 1; ++i) buffer[i] = values[i];
-			buffer[count - 1] = value;
-			if (alloc) delete[] values, values = buffer;
+			if (reserved < ++count) {
+				RPCValue** buffer = new RPCValue*[count];
+				memcpy(buffer, values, (count - 1) * sizeof(RPCValue*));
+				delete[] values, values = buffer;
+			}
+			values[count - 1] = value;
 		}
 
 		void unshift(RPCValue* value) {
-			bool alloc = (reserved < ++count);
-			RPCValue** buffer = (alloc ? new RPCValue*[count] : values);
-			for (byte i = count - 1; i > 0; --i) buffer[i] = values[i - 1];
-			buffer[0] = value;
-			if (alloc) delete[] values, values = buffer;
+			if (reserved < ++count) {
+				RPCValue** buffer = new RPCValue*[count];
+				memcpy(&buffer[1], values, (count - 1) * sizeof(RPCValue*));
+				delete[] values, values = buffer;
+			}
+			values[0] = value;
 		}
 
 		void reserve(byte size) {
 			if (size <= count) return;
 			RPCValue** buffer = new RPCValue*[reserved = size];
-			for (byte i = 0; i < count; ++i)
-				buffer[i] = values[i];
-			delete[] values;
-			values = buffer;
+			memcpy(buffer, values, count * sizeof(RPCValue*));
+			delete[] values, values = buffer;
 		}
 
 		bool read(Stream* stream) {
-			byte size;
-			while (size = stream->available()) switch (state) {
 
-				case RPC_START: {
+			byte size;
+
+			start: if (size = stream->available()) {
+
+				if (RPC_START == state) {
 					if (size < 2) return false;
 					if (stream->read() == 0x7B && stream->read() == 0x7B)
 						state = RPC_ARGUMENTS;
-					break;
+					goto start;
 				}
 
-				case RPC_ARGUMENTS: {
+				if (RPC_ARGUMENTS == state) {
 					if (clear(), argCount = stream->read()) {
 						if (argCount < RPC_MAX_ARGS) {
 							reserve(argCount);
 							state = RPC_ARGUMENT;
 						} else state = RPC_START;
 					} else state = RPC_END;
-					break;
+					goto start;
 				}
 
-				case RPC_ARGUMENT: {
+				if (RPC_ARGUMENT == state) {
 					if (stream->peek() < RPC_START) {
 						state = stream->read();
 						if (RPC_NULL == state) {
@@ -70,99 +72,106 @@ class RPCPacket {
 							state = (count < argCount ? RPC_ARGUMENT : RPC_END);
 						}
 					} else state = RPC_START;
-					break;
+					goto start;
 				}
 
-				case RPC_BOOL: {
+				if (RPC_BOOL == state) {
 					pushBool(!!stream->read());
 					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
-					break;
+					goto start;
 				}
 
-				case RPC_FLOAT: {
+				if (RPC_FLOAT == state) {
 					if (size < 4) return false;
 					char buffer[4];
 					stream->readBytes(buffer, 4);
 					pushFloat(*reinterpret_cast<float*>(&buffer));
 					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
-					break;
+					goto start;
 				}
 
-				case RPC_INT: {
+				if (RPC_INT == state) {
 					if (size < 4) return false;
 					char buffer[4];
 					stream->readBytes(buffer, 4);
 					pushInt(*reinterpret_cast<int32_t*>(&buffer));
 					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
-					break;
+					goto start;
 				}
 
-				case RPC_STRING: {
+				if (RPC_STRING == state) {
 					if (size - 1 < stream->peek()) return false;
 					char value[(size = stream->read()) + 1];
 					stream->readBytes(value, size);
 					value[size] = '\0';
 					pushString(value);
 					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
-					break;
+					goto start;
 				}
 
-				case RPC_END: {
+				if (RPC_END == state) {
 					if (size < 2) return false;
 					state = RPC_START;
-					if (stream->peek() == 0x7D) stream->read(); else break;
-					if (stream->peek() == 0x7D) stream->read(); else break;
-
+					if (stream->peek() == 0x7D) stream->read(); else goto start;
+					if (stream->peek() == 0x7D) stream->read(); else goto start;
 					return true;
-
 				}
+
+
 			}
 
 			return false;
 		}
 
 		void write(Stream* stream) {
-			byte c;
+
 			RPCValue* value;
+			byte c = 0, type;
 			stream->write((byte[]){0x7B, 0x7B, count}, 3);
-			for (c = 0; c < count; ++c) {
-				switch ((value = values[c])->getType()) {
 
-					case RPC_NULL: {
-						stream->write((byte)RPC_NULL);
-						break;
-					}
+			writeArgument: if (c < count) {
 
-					case RPC_BOOL: {
-						stream->write((byte[]){RPC_BOOL, value->getBool() ? 1 : 0}, 2);
-						break;
-					}
+				value = values[c++];
+				type = value->getType();
 
-					case RPC_FLOAT: {
-						byte buffer[5] = {RPC_FLOAT};
-						*reinterpret_cast<float*>(&buffer[1]) = value->getFloat();
-						stream->write(buffer, 5);
-						break;
-					}
 
-					case RPC_INT: {
-						byte buffer[5] = {RPC_INT};
-						*reinterpret_cast<int32_t*>(&buffer[1]) = value->getInt();
-						stream->write(buffer, 5);
-						break;
-					}
-
-					case RPC_STRING: {
-						byte length = strlen(value->getString());
-						byte buffer[2 + length];
-						buffer[0] = RPC_STRING, buffer[1] = length;
-						memcpy(&buffer[2], value->getString(), length);
-						stream->write(buffer, 2 + length);
-						break;
-					}
-
+				if (RPC_NULL == type) {
+					stream->write((byte)RPC_NULL);
+					goto writeArgument;
 				}
+
+				if (RPC_BOOL == type) {
+					stream->write((byte[]){RPC_BOOL, value->getBool() ? 1 : 0}, 2);
+					goto writeArgument;
+				}
+
+				if (RPC_FLOAT == type) {
+					byte buffer[5] = {RPC_FLOAT};
+					*reinterpret_cast<float*>(&buffer[1]) = value->getFloat();
+					stream->write(buffer, 5);
+					goto writeArgument;
+				}
+
+				if (RPC_INT == type) {
+					byte buffer[5] = {RPC_INT};
+					*reinterpret_cast<int32_t*>(&buffer[1]) = value->getInt();
+					stream->write(buffer, 5);
+					goto writeArgument;
+				}
+
+				if (RPC_STRING == type) {
+					const char* string = value->getString();
+					byte length = strlen(string);
+					byte buffer[2 + length];
+					buffer[0] = RPC_STRING, buffer[1] = length;
+					memcpy(&buffer[2], string, length);
+					stream->write(buffer, 2 + length);
+					goto writeArgument;
+				}
+
+
 			}
+
 			stream->write((byte[]){0x7D, 0x7D}, 2);
 			stream->flush();
 		}
@@ -172,11 +181,11 @@ class RPCPacket {
 		const byte &length;
 
 		void clear() {
-			while (count--) delete values[count];
+			while (count)
+				delete values[--count];
 			delete[] values;
 			values = NULL;
 			reserved = 0;
-			count = 0;
 		}
 
 		void pushNull() { push(new RPCValue()); }
@@ -198,8 +207,7 @@ class RPCPacket {
 		RPCValue shiftValue() {
 			if (!count) return nullValue;
 			RPCValue** buffer = new RPCValue*[count -= 1];
-			for (byte c = 0; c < count; ++c)
-				buffer[c] = values[c + 1];
+			memcpy(buffer, &values[1], count * sizeof(RPCValue*));
 			RPCValue result(values[0]);
 			delete values[0];
 			delete [] values, values = buffer;
@@ -209,8 +217,7 @@ class RPCPacket {
 		RPCValue popValue() {
 			if (!count) return nullValue;
 			RPCValue** buffer = new RPCValue*[count -= 1];
-			for (byte c = 0; c < count; ++c)
-				buffer[c] = values[c];
+			memcpy(buffer, values, count * sizeof(RPCValue*));
 			RPCValue result(values[count]);
 			delete values[count];
 			delete [] values, values = buffer;
