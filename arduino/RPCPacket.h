@@ -30,7 +30,7 @@ class RPCPacket {
 				RPCValue** buffer = new RPCValue*[count];
 				memcpy(&buffer[1], values, (count - 1) * sizeof(RPCValue*));
 				delete[] values, values = buffer;
-			}
+			} else memmove(&values[1], values, (count - 1) * sizeof(RPCValue*));
 			values[0] = value;
 		}
 
@@ -58,26 +58,28 @@ class RPCPacket {
 					if (clear(), argCount = stream->read()) {
 						if (argCount < RPC_MAX_ARGS) {
 							reserve(argCount);
-							state = RPC_ARGUMENT;
+							state = RPC_ARGUMENT_START;
 						} else state = RPC_START;
 					} else state = RPC_END;
 					goto start;
 				}
 
-				if (RPC_ARGUMENT == state) {
+				if (RPC_ARGUMENT_START == state) {
 					if (stream->peek() < RPC_START) {
 						state = stream->read();
-						if (RPC_NULL == state) {
-							pushNull();
-							state = (count < argCount ? RPC_ARGUMENT : RPC_END);
-						}
 					} else state = RPC_START;
+					goto start;
+				}
+
+				if (RPC_NULL == state) {
+					pushNull();
+					state = RPC_ARGUMENT_END;
 					goto start;
 				}
 
 				if (RPC_BOOL == state) {
 					pushBool(!!stream->read());
-					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
+					state = RPC_ARGUMENT_END;
 					goto start;
 				}
 
@@ -86,7 +88,7 @@ class RPCPacket {
 					char buffer[4];
 					stream->readBytes(buffer, 4);
 					pushFloat(*reinterpret_cast<float*>(&buffer));
-					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
+					state = RPC_ARGUMENT_END;
 					goto start;
 				}
 
@@ -95,7 +97,7 @@ class RPCPacket {
 					char buffer[4];
 					stream->readBytes(buffer, 4);
 					pushInt(*reinterpret_cast<int32_t*>(&buffer));
-					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
+					state = RPC_ARGUMENT_END;
 					goto start;
 				}
 
@@ -105,7 +107,12 @@ class RPCPacket {
 					stream->readBytes(value, size);
 					value[size] = '\0';
 					pushString(value);
-					state = (count < argCount ? RPC_ARGUMENT : RPC_END);
+					state = RPC_ARGUMENT_END;
+					goto start;
+				}
+
+				if (RPC_ARGUMENT_END == state) {
+					state = (count < argCount ? RPC_ARGUMENT_START : RPC_END);
 					goto start;
 				}
 
@@ -126,41 +133,40 @@ class RPCPacket {
 		void write(Stream* stream) {
 
 			RPCValue* value;
-			byte c = 0, type;
+			byte c = 0;
 			stream->write((byte[]){0x7B, 0x7B, count}, 3);
 
 			writeArgument: if (c < count) {
 
 				value = values[c++];
-				type = value->getType();
 
 
-				if (RPC_NULL == type) {
+				if (RPC_NULL == value->vType) {
 					stream->write((byte)RPC_NULL);
 					goto writeArgument;
 				}
 
-				if (RPC_BOOL == type) {
-					stream->write((byte[]){RPC_BOOL, value->getBool() ? 1 : 0}, 2);
+				if (RPC_BOOL == value->vType) {
+					stream->write((byte[]){RPC_BOOL, value->vBool ? 1 : 0}, 2);
 					goto writeArgument;
 				}
 
-				if (RPC_FLOAT == type) {
+				if (RPC_FLOAT == value->vType) {
 					byte buffer[5] = {RPC_FLOAT};
-					*reinterpret_cast<float*>(&buffer[1]) = value->getFloat();
+					*reinterpret_cast<float*>(&buffer[1]) = value->vFloat;
 					stream->write(buffer, 5);
 					goto writeArgument;
 				}
 
-				if (RPC_INT == type) {
+				if (RPC_INT == value->vType) {
 					byte buffer[5] = {RPC_INT};
-					*reinterpret_cast<int32_t*>(&buffer[1]) = value->getInt();
+					*reinterpret_cast<int32_t*>(&buffer[1]) = value->vInt;
 					stream->write(buffer, 5);
 					goto writeArgument;
 				}
 
-				if (RPC_STRING == type) {
-					const char* string = value->getString();
+				if (RPC_STRING == value->vType) {
+					const char* string = value->vString;
 					byte length = strlen(string);
 					byte buffer[2 + length];
 					buffer[0] = RPC_STRING, buffer[1] = length;
@@ -224,8 +230,8 @@ class RPCPacket {
 			return result;
 		}
 
-		byte getType(byte index) { return (index < count ? values[index]->getType() : RPC_NULL); }
-		bool getType(byte index, byte type) { return (index < count ? values[index]->getType(type) : RPC_NULL == type); }
+		byte getType(byte index) { return (index < count ? values[index]->vType : RPC_NULL); }
+		bool getType(byte index, byte type) { return (index < count ? values[index]->vType : RPC_NULL) == type; }
 		bool getBool(byte index, bool value = false) { return (index < count ? values[index]->getBool(value) : value); }
 		float getFloat(byte index, float value = 0) { return (index < count ? values[index]->getFloat(value) : value); }
 		int32_t getInt(byte index, int32_t value = 0) { return (index < count ? values[index]->getInt(value) : value); }
