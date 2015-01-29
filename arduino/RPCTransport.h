@@ -37,16 +37,17 @@ class RPCTransport: private RPCPacket {
 		byte processPacket(RPCPacket* packet) {
 			byte command = 0;
 			if (packet->read(stream)) {
-				command = packet->getInt(0);
+
+				command = packet->shiftValue().getInt(0);
 
 				if (command == RPC_CMD_READY) {
 					begin(bindHandlers);
 				}
 
 				else if (command == RPC_CMD_CALL) {
-					byte handlerIndex = packet->getInt(1);
-					byte resultIndex = packet->getInt(2);
-					handlers[handlerIndex](packet->remove(3));
+					byte handlerIndex = packet->shiftValue().getInt(1);
+					byte resultIndex = packet->shiftValue().getInt(2);
+					handlers[handlerIndex](packet);
 					packet->unshiftInt(resultIndex);
 					packet->unshiftInt(RPC_CMD_RET);
 					packet->write(stream);

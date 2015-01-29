@@ -10,8 +10,8 @@ class RPCPacket {
 	private:
 
 		byte state;
-		byte count;
 		byte argCount;
+		byte count;
 		byte reserved;
 		RPCValue** values;
 		static RPCValue nullValue;
@@ -179,24 +179,6 @@ class RPCPacket {
 			count = 0;
 		}
 
-		RPCPacket* remove(int8_t index) {
-
-			if (index > 0) {
-
-				RPCValue** buffer = new RPCValue*[count - index];
-				for (byte i = 0; i < count; ++i) {
-					if (i < index) delete values[i];
-					else buffer[i - index] = values[i];
-				}
-				count-= index;
-				delete [] values, values = buffer;
-
-			}
-
-			return this;
-
-		}
-
 		void pushNull() { push(new RPCValue()); }
 		void pushBool(const bool value) { push(new RPCValue(value)); }
 		void pushFloat(const float value) { push(new RPCValue(value)); }
@@ -213,6 +195,28 @@ class RPCPacket {
 		void unshiftValue(const RPCValue* value) { unshift(new RPCValue(value)); }
 		void unshiftValue(const RPCValue& value) { unshift(new RPCValue(value)); }
 
+		RPCValue shiftValue() {
+			if (!count) return nullValue;
+			RPCValue** buffer = new RPCValue*[count -= 1];
+			for (byte c = 0; c < count; ++c)
+				buffer[c] = values[c + 1];
+			RPCValue result(values[0]);
+			delete values[0];
+			delete [] values, values = buffer;
+			return result;
+		}
+
+		RPCValue popValue() {
+			if (!count) return nullValue;
+			RPCValue** buffer = new RPCValue*[count -= 1];
+			for (byte c = 0; c < count; ++c)
+				buffer[c] = values[c];
+			RPCValue result(values[count]);
+			delete values[count];
+			delete [] values, values = buffer;
+			return result;
+		}
+
 		byte getType(byte index) { return (index < count ? values[index]->getType() : RPC_NULL); }
 		bool getType(byte index, byte type) { return (index < count ? values[index]->getType(type) : RPC_NULL == type); }
 		bool getBool(byte index, bool value = false) { return (index < count ? values[index]->getBool(value) : value); }
@@ -221,14 +225,8 @@ class RPCPacket {
 		const char* getString(byte index, const char value[] = "") { return (index < count ? values[index]->getString(value) : value); }
 		const RPCValue* getValue(byte index) { return (index < count ? values[index] : &nullValue); }
 
-		RPCPacket(): length(count) {
-			argCount = 0, state = RPC_START;
-			count = 0, reserved = 0, values = NULL;
-		}
-
-		~RPCPacket() {
-			clear();
-		}
+		RPCPacket(): state(RPC_START), argCount(0), count(0), reserved(0), values(NULL), length(count) {}
+		~RPCPacket() { clear(); }
 
 };
 

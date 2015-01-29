@@ -1,0 +1,1 @@
+-Winvalid-pch -Wall -Wno-long-long -Os -ggdb -gstabs -fdata-sections -ffunction-sections -fsigned-char -Wl,-gc-sections -Wl,-u,vfprintf -lprintf_min -fshort-enums -mcall-prologues -Wl,--relax --param inline-call-cost=2
