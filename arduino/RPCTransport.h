@@ -29,7 +29,7 @@ class RPCTransport: private RPCPacket {
 		typedef void(*Handler)(RPCPacket*);
 		typedef void(*BindHandler)(void);
 		Handler handlers[5];
-		byte handlerIndex;
+		byte handlerCount;
 		Stream* stream;
 		BindHandler bindHandlers;
 		bool canBindHandlers;
@@ -60,12 +60,12 @@ class RPCTransport: private RPCPacket {
 
 	public:
 
-		RPCTransport(Stream* serial): stream(serial), handlerIndex(0), bindHandlers(NULL), canBindHandlers(false) {}
+		RPCTransport(Stream* serial): stream(serial), handlerCount(0), bindHandlers(NULL), canBindHandlers(false) {}
 
 		void begin(BindHandler handler) {
 
-			while (handlerIndex)
-				handlers[--handlerIndex] = NULL;
+			while (handlerCount)
+				handlers[--handlerCount] = NULL;
 
 			if (handler != NULL) {
 				canBindHandlers = true;
@@ -84,12 +84,12 @@ class RPCTransport: private RPCPacket {
 
 		void on(const char value[], Handler handler) {
 			if (canBindHandlers) {
-				handlers[handlerIndex] = handler;
+				handlers[handlerCount] = handler;
 				RPCPacket request;
 				request.reserve(3);
 				request.pushInt(RPC_CMD_BIND);
 				request.pushString(value);
-				request.pushInt(handlerIndex++);
+				request.pushInt(handlerCount++);
 				request.write(stream);
 			}
 		}
