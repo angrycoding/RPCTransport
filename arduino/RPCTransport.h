@@ -45,32 +45,31 @@ class RPCTransport: private RPCRequest {
 
 
 		byte processPacket(RPCRequest* packet) {
-			byte command = 0;
-			if (packet->read(stream)) {
 
-				command = packet->shiftValue().getInt(0);
+			if (!packet->read(stream)) return 0;
+			byte command = packet->shiftValue().getInt(0);
 
-				if (command == RPC_COMMAND_READY) {
-					// this won't be executed because of the state
-					begin(bindHandlers);
-				}
-
-				else if (command == RPC_COMMAND_CALL) {
+			if (RPC_COMMAND_CALL == command || RPC_COMMAND_NOTIFY == command) {
+				byte resultIndex, handlerIndex = packet->shiftValue().getInt(handlerCount);
+				if (RPC_COMMAND_CALL == command) resultIndex = packet->shiftValue().getInt();
+				if (handlerIndex < handlerCount) {
+					byte oldTransportState = transportState;
 					transportState = RPC_STATE_HANDLING;
-
-					byte handlerIndex = packet->shiftValue().getInt(1);
-					byte resultIndex = packet->shiftValue().getInt(2);
-
 					handlers[handlerIndex](packet);
-
+					transportState = oldTransportState;
+				}
+				if (RPC_COMMAND_CALL == command) {
 					packet->unshiftInt(resultIndex);
 					packet->unshiftInt(RPC_COMMAND_RET);
 					packet->write(stream);
-
-					transportState = RPC_STATE_RECEIVING;
 				}
-
 			}
+
+			else if (RPC_COMMAND_READY == command) {
+				transportState = RPC_STATE_IDLE;
+				begin(bindHandlers);
+			}
+
 			return command;
 		}
 
@@ -84,34 +83,22 @@ class RPCTransport: private RPCRequest {
 
 		void begin(BindHandler handler) {
 			if (RPC_STATE_IDLE == transportState) {
-
 				transportState = RPC_STATE_STARTING;
-
-				while (handlerCount)
-					handlers[--handlerCount] = NULL;
-
-				if (handler != NULL)
-					(bindHandlers = handler)();
-
-				clear();
-				pushInt(RPC_COMMAND_READY);
-				write(stream);
-
-
+				while (handlerCount) handlers[--handlerCount] = NULL;
+				if (handler != NULL) (bindHandlers = handler)();
+				clear(), pushInt(RPC_COMMAND_READY), write(stream);
 				transportState = RPC_STATE_RECEIVING;
-
 			}
 		}
 
 		void on(const char value[], Handler handler) {
-			if (RPC_STATE_STARTING == transportState) {
-				handlers[handlerCount] = handler;
-				clear();
-				reserve(3);
+			if (RPC_STATE_STARTING == transportState && handler != NULL) {
+				clear(), reserve(3);
 				pushInt(RPC_COMMAND_BIND);
 				pushString(value);
-				pushInt(handlerCount++);
+				pushInt(handlerCount);
 				write(stream);
+				handlers[handlerCount++] = handler;
 			}
 		}
 
