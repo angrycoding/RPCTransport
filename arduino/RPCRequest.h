@@ -1,9 +1,9 @@
-#ifndef RPCPacket_h
-#define RPCPacket_h
+#ifndef RPCRequest_h
+#define RPCRequest_h
 
 #include "RPCValue.h"
 
-class RPCPacket {
+class RPCRequest {
 
 	friend class RPCTransport;
 
@@ -238,11 +238,11 @@ class RPCPacket {
 		const char* getString(byte index, const char value[] = "") { return (index < count ? values[index]->getString(value) : value); }
 		const RPCValue* getValue(byte index) { return (index < count ? values[index] : &nullValue); }
 
-		RPCPacket(): state(RPC_START), argCount(0), count(0), reserved(0), values(NULL), length(count) {}
-		~RPCPacket() { clear(); }
+		RPCRequest(): state(RPC_START), argCount(0), count(0), reserved(0), values(NULL), length(count) {}
+		~RPCRequest() { clear(); }
 
 };
 
-RPCValue RPCPacket::nullValue;
+RPCValue RPCRequest::nullValue;
 
 #endif

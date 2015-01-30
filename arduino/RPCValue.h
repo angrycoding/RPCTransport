@@ -3,7 +3,7 @@
 
 class RPCValue {
 
-	friend class RPCPacket;
+	friend class RPCRequest;
 
 	private:
 

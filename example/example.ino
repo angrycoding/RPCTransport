@@ -2,14 +2,14 @@
 
 RPCTransport transport(&Serial);
 
-void toggleLed(RPCPacket* packet) {
+void toggleLed(RPCRequest* packet) {
 	bool state = digitalRead(14);
 	digitalWrite(14, state = !state);
 	packet->clear();
 	packet->pushBool(state);
 }
 
-void changeLed(RPCPacket* packet) {
+void changeLed(RPCRequest* packet) {
 	digitalWrite(14, packet->getBool(0));
 	packet->clear();
 	packet->pushBool(digitalRead(14));
@@ -42,7 +42,7 @@ void loop() {
 	bool newState = digitalRead(15);
 	if (state != newState) {
 		state = newState;
-		RPCPacket(transport, "changed", newState);
+		RPCRequest(transport, "changed", newState);
 	}
 
 	// RPCSend(transport, valx++);

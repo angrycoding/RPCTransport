@@ -26,16 +26,16 @@
 #define RPC_STATE_HANDLING 3
 
 
-#include "RPCPacket.h"
+#include "RPCRequest.h"
 
 
-class RPCTransport: private RPCPacket {
+class RPCTransport: private RPCRequest {
 
 	private:
 
 		byte transportState;
 		byte handlerCount;
-		typedef void(*Handler)(RPCPacket*);
+		typedef void(*Handler)(RPCRequest*);
 		typedef void(*BindHandler)(void);
 
 		Handler handlers[5];
@@ -44,7 +44,7 @@ class RPCTransport: private RPCPacket {
 
 
 
-		byte processPacket(RPCPacket* packet) {
+		byte processPacket(RPCRequest* packet) {
 			byte command = 0;
 			if (packet->read(stream)) {
 
@@ -121,10 +121,10 @@ class RPCTransport: private RPCPacket {
 			}
 		}
 
-		RPCPacket call(RPCValue args[], byte count) {
+		RPCRequest call(RPCValue args[], byte count) {
 			if (transportState >= RPC_STATE_RECEIVING) {
 				while (state != RPC_START) processPacket(this);
-				RPCPacket request; request.reserve(count);
+				RPCRequest request; request.reserve(count);
 				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
 				request.unshiftInt(RPC_COMMAND_CALL), request.write(stream);
 				while (processPacket(&request) != RPC_COMMAND_RET);
@@ -134,7 +134,7 @@ class RPCTransport: private RPCPacket {
 
 		void notify(RPCValue args[], byte count) {
 			if (transportState >= RPC_STATE_RECEIVING) {
-				RPCPacket request; request.reserve(count);
+				RPCRequest request; request.reserve(count);
 				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
 				request.unshiftInt(RPC_COMMAND_NOTIFY), request.write(stream);
 			}
@@ -144,7 +144,7 @@ class RPCTransport: private RPCPacket {
 
 
 
-#define RPCPacket(transport, ...) (((RPCTransport&)transport).call((RPCValue[]){__VA_ARGS__}, strlen(#__VA_ARGS__) ? RPC_NUM_ARGS(__VA_ARGS__) : 0));
+#define RPCRequest(transport, ...) (((RPCTransport&)transport).call((RPCValue[]){__VA_ARGS__}, strlen(#__VA_ARGS__) ? RPC_NUM_ARGS(__VA_ARGS__) : 0));
 #define RPCNotify(transport, ...) (((RPCTransport&)transport).notify((RPCValue[]){__VA_ARGS__}, strlen(#__VA_ARGS__) ? RPC_NUM_ARGS(__VA_ARGS__) : 0));
 #define RPC_NUM_ARGS(...) RPC_NUM_ARGS_IMPL(__VA_ARGS__,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
 #define RPC_NUM_ARGS_IMPL(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
