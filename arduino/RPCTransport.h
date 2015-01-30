@@ -22,13 +22,14 @@
 
 #define RPC_STATE_IDLE 0
 #define RPC_STATE_STARTING 1
-#define RPC_STATE_STARTED 2
+#define RPC_STATE_RECEIVING 2
+#define RPC_STATE_HANDLING 3
 
 
 #include "RPCPacket.h"
 
 
-class RPCTransport {
+class RPCTransport: private RPCPacket {
 
 	private:
 
@@ -36,7 +37,7 @@ class RPCTransport {
 		byte handlerCount;
 		typedef void(*Handler)(RPCPacket*);
 		typedef void(*BindHandler)(void);
-		RPCPacket incoming;
+
 		Handler handlers[5];
 		Stream* stream;
 		BindHandler bindHandlers;
@@ -50,16 +51,23 @@ class RPCTransport {
 				command = packet->shiftValue().getInt(0);
 
 				if (command == RPC_COMMAND_READY) {
+					// this won't be executed because of the state
 					begin(bindHandlers);
 				}
 
 				else if (command == RPC_COMMAND_CALL) {
+					transportState = RPC_STATE_HANDLING;
+
 					byte handlerIndex = packet->shiftValue().getInt(1);
 					byte resultIndex = packet->shiftValue().getInt(2);
+
 					handlers[handlerIndex](packet);
+
 					packet->unshiftInt(resultIndex);
 					packet->unshiftInt(RPC_COMMAND_RET);
 					packet->write(stream);
+
+					transportState = RPC_STATE_RECEIVING;
 				}
 
 			}
@@ -85,12 +93,12 @@ class RPCTransport {
 				if (handler != NULL)
 					(bindHandlers = handler)();
 
-				RPCPacket request;
-				request.pushInt(RPC_COMMAND_READY);
-				request.write(stream);
+				clear();
+				pushInt(RPC_COMMAND_READY);
+				write(stream);
 
 
-				transportState = RPC_STATE_STARTED;
+				transportState = RPC_STATE_RECEIVING;
 
 			}
 		}
@@ -98,49 +106,37 @@ class RPCTransport {
 		void on(const char value[], Handler handler) {
 			if (RPC_STATE_STARTING == transportState) {
 				handlers[handlerCount] = handler;
-				RPCPacket request;
-				request.reserve(3);
-				request.pushInt(RPC_COMMAND_BIND);
-				request.pushString(value);
-				request.pushInt(handlerCount++);
-				request.write(stream);
+				clear();
+				reserve(3);
+				pushInt(RPC_COMMAND_BIND);
+				pushString(value);
+				pushInt(handlerCount++);
+				write(stream);
 			}
 		}
 
 		void process() {
-			if (RPC_STATE_STARTED == transportState) {
-				processPacket(&incoming);
+			if (RPC_STATE_RECEIVING == transportState) {
+				processPacket(this);
 			}
 		}
 
 		RPCPacket call(RPCValue args[], byte count) {
-			if (RPC_STATE_STARTED == transportState) {
-
-				while (incoming.state != RPC_START) processPacket(&incoming);
-				incoming.clear(), incoming.reserve(count);
-				for (byte c = 0; c < count; ++c) incoming.pushValue(args[c]);
-				incoming.unshiftInt(RPC_COMMAND_CALL), incoming.write(stream);
-				while (processPacket(&incoming) != RPC_COMMAND_RET);
-				return incoming;
-
-				// RPCPacket request;
-				// request.reserve(count);
-				// for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
-				// request.unshiftInt(RPC_COMMAND_CALL), request.write(stream);
-				// while (processPacket(&request) != RPC_COMMAND_RET);
-				// return request;
-
+			if (transportState >= RPC_STATE_RECEIVING) {
+				while (state != RPC_START) processPacket(this);
+				RPCPacket request; request.reserve(count);
+				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
+				request.unshiftInt(RPC_COMMAND_CALL), request.write(stream);
+				while (processPacket(&request) != RPC_COMMAND_RET);
+				return request;
 			}
 		}
 
 		void notify(RPCValue args[], byte count) {
-			if (RPC_STATE_STARTED == transportState) {
-
-				while (incoming.state != RPC_START) processPacket(&incoming);
-				incoming.clear(), incoming.reserve(count);
-				for (byte c = 0; c < count; ++c) incoming.pushValue(args[c]);
-				incoming.unshiftInt(RPC_COMMAND_CALL), incoming.write(stream);
-
+			if (transportState >= RPC_STATE_RECEIVING) {
+				RPCPacket request; request.reserve(count);
+				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
+				request.unshiftInt(RPC_COMMAND_NOTIFY), request.write(stream);
 			}
 		}
 
