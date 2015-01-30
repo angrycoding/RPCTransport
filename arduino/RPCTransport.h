@@ -1,19 +1,6 @@
 #ifndef RPCTransport_h
 #define RPCTransport_h
 
-#define RPC_NULL 0
-#define RPC_BOOL 1
-#define RPC_FLOAT 2
-#define RPC_INT 3
-#define RPC_STRING 4
-#define RPC_START 5
-#define RPC_ARGUMENTS 6
-#define RPC_ARGUMENT_START 7
-#define RPC_ARGUMENT_END 8
-#define RPC_END 9
-
-#define RPC_MAX_ARGS 16
-
 #define RPC_COMMAND_CALL 0x10
 #define RPC_COMMAND_RET 0x20
 #define RPC_COMMAND_BIND 0x30
