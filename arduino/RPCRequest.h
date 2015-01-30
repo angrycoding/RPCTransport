@@ -27,7 +27,7 @@ class RPCRequest {
 		byte reserved;
 		RPCValue** values;
 		static RPCValue nullValue;
-		// use realloc?
+
 		void push(RPCValue* value) {
 			if (reserved < ++count) {
 				RPCValue** buffer = new RPCValue*[count];
