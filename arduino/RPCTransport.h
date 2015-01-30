@@ -96,14 +96,15 @@ class RPCTransport: private RPCRequest {
 		}
 
 		RPCRequest call(RPCValue args[], byte count) {
+			RPCRequest request;
 			if (transportState >= RPC_STATE_RECEIVING) {
 				while (state != RPC_START) processPacket(this);
-				RPCRequest request; request.reserve(count);
+				request.reserve(count);
 				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
 				request.unshiftInt(RPC_COMMAND_CALL), request.write(stream);
 				while (processPacket(&request) != RPC_COMMAND_RET);
-				return request;
 			}
+			return request;
 		}
 
 		void notify(RPCValue args[], byte count) {
