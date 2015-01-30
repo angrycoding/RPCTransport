@@ -14,4 +14,8 @@ io.on('connect', function(socket) {
 		transport.call(name, args, ret);
 	});
 
+	socket.on('rpc:notify', function(name, args, ret) {
+		transport.notify(name, args, ret);
+	});
+
 });

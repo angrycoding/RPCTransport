@@ -15,11 +15,7 @@
 	}
 
 	function changeLed(state) {
-		socket.emit('rpc:call', 'changeLed', state);
-	}
-
-	function changeDelay(delay) {
-		socket.emit('rpc:call', 'changeDelay', parseInt(delay));
+		socket.emit('rpc:notify', 'changeLed', state);
 	}
 
 </script>

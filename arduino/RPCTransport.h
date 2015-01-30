@@ -1,10 +1,10 @@
 #ifndef RPCTransport_h
 #define RPCTransport_h
 
-#define RPC_COMMAND_CALL 0x10
-#define RPC_COMMAND_RET 0x20
-#define RPC_COMMAND_BIND 0x30
-#define RPC_COMMAND_READY 0x40
+#define RPC_COMMAND_BIND 0x10
+#define RPC_COMMAND_READY 0x20
+#define RPC_COMMAND_RET 0x30
+#define RPC_COMMAND_CALL 0x40
 #define RPC_COMMAND_NOTIFY 0x50
 
 #define RPC_STATE_IDLE 0
@@ -36,7 +36,7 @@ class RPCTransport: private RPCRequest {
 			if (!packet->read(stream)) return 0;
 			byte command = packet->shiftValue().getInt(0);
 
-			if (RPC_COMMAND_CALL == command || RPC_COMMAND_NOTIFY == command) {
+			if (command >= RPC_COMMAND_CALL) {
 				byte resultIndex, handlerIndex = packet->shiftValue().getInt(handlerCount);
 				if (RPC_COMMAND_CALL == command) resultIndex = packet->shiftValue().getInt();
 				if (handlerIndex < handlerCount) {

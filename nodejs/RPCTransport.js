@@ -15,10 +15,11 @@ const RPC_ARGUMENTS = 6;
 const RPC_ARGUMENT = 7;
 const RPC_END = 8;
 
-const RPC_CMD_CALL = 0x10;
-const RPC_CMD_RET = 0x20;
-const RPC_CMD_BIND = 0x30;
-const RPC_CMD_READY = 0x40;
+const RPC_CMD_BIND = 0x10;
+const RPC_CMD_READY = 0x20;
+const RPC_CMD_RET = 0x30;
+const RPC_CMD_CALL = 0x40;
+const RPC_COMMAND_NOTIFY = 0x50;
 
 
 function waitConnection(serialPort) {
@@ -136,6 +137,12 @@ Transport.prototype.processPacket = function(data) {
 			serialPort.write(createPacket(RPC_CMD_RET, arguments));
 		})) serialPort.write(createPacket(RPC_CMD_RET));
 	}
+
+	else if (argValues[0] === RPC_COMMAND_NOTIFY) {
+		console.info('RPC_COMMAND_NOTIFY', argValues);
+		this.emit(argValues[1], argValues.slice(2), function() {});
+	}
+
 
 	else if (argValues[0] === RPC_CMD_RET) {
 		console.info('RPC_CMD_RET', argValues);
@@ -274,6 +281,24 @@ Transport.prototype.call = function(name, args, ret) {
 		Array.prototype.push.apply(packet, [].concat(args));
 		packet = createPacket(packet);
 		serialPort.write(packet);
+	}
+
+};
+
+Transport.prototype.notify = function(name, args, ret) {
+
+	var packet = [];
+	var bindings = this.bindings;
+	var serialPort = this.serialPort;
+
+	if (bindings.hasOwnProperty(name)) {
+		packet.push(RPC_COMMAND_NOTIFY);
+		packet.push(bindings[name]);
+		Array.prototype.push.apply(packet, [].concat(args));
+		packet = createPacket(packet);
+		serialPort.write(packet, function() {
+			if (typeof ret == 'function') ret();
+		});
 	}
 
 };

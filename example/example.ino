@@ -42,7 +42,7 @@ void loop() {
 	bool newState = digitalRead(15);
 	if (state != newState) {
 		state = newState;
-		RPCRequest(transport, "changed", newState);
+		RPCNotify(transport, "changed", newState);
 	}
 
 	// RPCSend(transport, valx++);
