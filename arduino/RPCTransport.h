@@ -68,7 +68,7 @@ class RPCTransport: private RPCRequest {
 			bindHandlers(NULL),
 			transportState(RPC_STATE_IDLE) {}
 
-		void begin(BindHandler handler) {
+		void begin(BindHandler handler = NULL) {
 			if (RPC_STATE_IDLE == transportState) {
 				transportState = RPC_STATE_STARTING;
 				while (handlerCount) handlers[--handlerCount] = NULL;

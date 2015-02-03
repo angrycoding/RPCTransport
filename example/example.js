@@ -6,6 +6,14 @@ var io = require('socket.io')(9999);
 
 io.on('connect', function(socket) {
 
+	transport.on('dht11', function(args, ret) {
+		socket.emit('dht11', args, ret);
+	});
+
+	transport.on('bmp180', function(args, ret) {
+		socket.emit('bmp180', args, ret);
+	});
+
 	transport.on('changed', function(args, ret) {
 		socket.emit('changed', args, ret);
 	});

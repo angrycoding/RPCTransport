@@ -1,3 +1,4 @@
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <script src="https://cdn.socket.io/socket.io-1.3.2.js"></script>
 <script type="text/javascript">
 	var socket = io.connect('http://localhost:9999');
@@ -18,8 +19,87 @@
 		socket.emit('rpc:notify', 'changeLed', state);
 	}
 
+	window.onload = function () {
+
+		var temperature = [];
+		var humidity = [];
+		var pressure = [];
+
+		var chart = new CanvasJS.Chart("chartContainer",{
+			title: {text: "Температура и Влажность"},
+			height: 600,
+			axisX:{
+		        gridColor: "#CDCDCD" ,
+		        gridThickness: 1,
+				labelFontSize: 10,
+		        valueFormatString: 'H:mm:ss'
+		      },
+
+			axisY:{
+				// interval: 10,
+				labelFontSize: 10,
+				gridThickness: 1,
+				gridColor: "#CDCDCD"
+			},
+
+			data: [{
+				type: "spline",
+				// markerType: 'none',
+				dataPoints: temperature
+			}, {
+				type: "spline",
+				// markerType: 'none',
+				dataPoints: pressure
+			}]
+		});
+
+		var xVal = 0;
+		var dataLength = 500; // number of dataPoints visible at any point
+
+		var temp = 0;
+		var hum = 0;
+		var press = 0;
+
+		socket.on('dht11', function(args, ret) {
+			temp = args[0];
+			hum = args[1];
+			ret();
+		});
+
+		socket.on('bmp180', function(args, ret) {
+			press = args[0];
+			ret();
+		});
+
+
+		setInterval(function() {
+
+			var time = new Date();
+
+			temperature.push({x: time, y: temp});
+			pressure.push({x: time, y: press});
+			// humidity.push({x: time, y: hum});
+
+			chart.render();
+
+			if (temperature.length > dataLength) temperature.shift();
+			if (pressure.length > dataLength) pressure.shift();
+			// if (humidity.length > dataLength) humidity.shift();
+
+			// xVal++;
+
+
+		}, 100);
+
+
+	}
+
 </script>
 
 <input type="button" value="change state" onclick="changeState(this)" />
 <input type="button" value="TURN ON" onclick="changeLed(true)" />
 <input type="button" value="TURN OFF" onclick="changeLed(false)" />
+<script type="text/javascript" src="http://canvasjs.com/assets/script/canvasjs.min.js"></script>
+
+<div id="chartContainer" style="height: 300px; width:100%;">
+	</div>
