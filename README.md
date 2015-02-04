@@ -4,7 +4,7 @@ Provides easy way to organize two - way communication between Arduino and Node.j
 * Smallest possible footprint, so library itself should not be bigger than your project, unfortunately this is not the case for both of the libraries listed above.
 * All basic data types must be supported (null, boolean, floats, ints and strings). Note that arrays and objects, despite that they are widely used in JavaScript are not supported, because supporting it would either increase size of your scetch and decrease performance. Anyways if you really need arrays and objects, then you should consider using something like [aJSON](https://github.com/interactive-matter/aJson).
 * Simple API, make things as intuitive and simple to use as possible.
-* Two - way communication, means that Node.js can call previously registered Arduino subroutine and receive result of it's execution and all the way around, Arduino can call previously registered subroutine on Node.js side.
+* Two - way communication, means that Node.js can call previously registered Arduino subroutine and receive result of it's execution and all the way around, Arduino can call previously registered subroutine on Node.js side, so more JavaScript, Node.js, web 2.0, HTML5 than hardcore C++.
 
 ```c++
 // include library
