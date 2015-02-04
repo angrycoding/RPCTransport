@@ -91,8 +91,7 @@ void serialEvent() {
 	transport.process();
 }
 ```
-If you do everything right, Node.js can execute methods on Arduino side, reading passed arguments is quite straightforward:
-
+If you do everything right, Node.js can now execute methods on Arduino side, reading passed arguments is quite straightforward:
 ```c++
 void canBeCalledFromNode1(RPCPacket* packet) {
 	// reading first argument as boolean
@@ -103,5 +102,58 @@ void canBeCalledFromNode1(RPCPacket* packet) {
 	long a3 = packet->getInt(2);
 	// reading fourth argument as string
 	char* a4 = packet->getString(3);
+}
+```
+Retrieving result is a bit tricky, same pointer is used to read arguments and to forward result to the caller. Before writing result, don't forget to clear the packet, otherwise everthing that you've received as an argument will be passed into result (echo mode):
+```c++
+void canBeCalledFromNode1(RPCPacket* packet) {
+	// read first argument as boolean
+	bool value = packet->getBool(0);
+	// if you don't do it, result will contain original request
+	packet->clear();
+	// push boolean into result set
+	packet->pushBool(true);
+	// push string into result set
+	packet->pushString("result from Arduino");
+}
+```
+More realistic example, let's create method that will allow Node.js to call digitalWrite on Arduino side:
+```c++
+// include library
+#include "RPCTransport.h"
+
+// instantiate RPCTransport and attach it to desired Serial
+RPCTransport transport(&Serial);
+
+// our digitalWrite implementation available to Node.js
+void myDigitalWrite(RPCPacket* packet) {
+	// read pin number
+	byte pinNumber = packet->getInt(0);
+	// read pin state
+	bool pinState = packet->getBool(1);
+	// do digitalWrite thing
+	digitalWrite(pinNumber, pinState);
+	// clear request arguments
+	packet->clear();
+	// let's respond with actual pinState
+	packet->pushBool(digitalRead(pinNumber));
+}
+
+// this will be called when Node.js client is connected to the board
+void registerMethods() {
+	transport.on("digitalWrite", myDigitalWrite);
+}
+
+void setup() {
+	// initialize Serial
+	Serial.begin(115200);
+	// initialize RPCTransport
+	transport.begin(registerMethods);
+}
+
+// called if there is serial data in the buffer
+void serialEvent() {
+	// process incoming request
+	transport.process();
 }
 ```
