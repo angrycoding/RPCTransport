@@ -91,7 +91,7 @@ void serialEvent() {
 	transport.process();
 }
 ```
-If you do everything right, Node.js can execute methods on Arduino side, reading passed arguments arguments is quite straightforward:
+If you do everything right, Node.js can execute methods on Arduino side, reading passed arguments is quite straightforward:
 
 ```c++
 void canBeCalledFromNode1(RPCPacket* packet) {
