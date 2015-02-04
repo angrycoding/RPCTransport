@@ -84,3 +84,24 @@ void setup() {
 	transport.begin(registerMethods);
 }
 ```
+In order to process incoming messages, you have to call **transport.process**, if you don't do that, Node.js won't be able to call Arduino methods. There are two common places where you would call it, inside of loop subroutine or inside of special [serialEvent](http://arduino.cc/en/Tutorial/SerialEvent) subroutine (preferred):
+```c++
+void serialEvent() {
+	// process incoming messages
+	transport.process();
+}
+```
+If you do everything right, Node.js can execute methods on Arduino side, reading passed arguments arguments is quite straightforward:
+
+```c++
+void canBeCalledFromNode1(RPCPacket* packet) {
+	// reading first argument as boolean
+	bool a1 = packet->getBool(0);
+	// reading second argument as float
+	float a2 = packet->getFloat(1);
+	// reading third argument as long
+	long a3 = packet->getInt(2);
+	// reading fourth argument as string
+	char* a4 = packet->getString(3);
+}
+```
