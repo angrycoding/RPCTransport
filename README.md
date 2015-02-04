@@ -56,3 +56,31 @@ void serialEvent() {
 	transport.process();
 }
 ```
+You start by instantiating RPCTransport and attaching it to desired serial port:
+```c++
+// instantiate RPCTransport and attach it to desired Serial
+RPCTransport transport(&Serial);
+```
+When you ready to receive (or send) commands you call **transport.begin** and pass optional argument - callback function where you can register functions that will be available for calling from Node.js side (but don't forget to initialize serial communication first). Register public methods by calling **transport.on**, note that this method can only be called inside of the callback that is passed into **transport.begin**, attempt to call it in any other place won't take any effect. First argument is the name of your method (will be used to call it from Node.js), second argument is callback function, that will be executed when it's called:
+```c++
+void canBeCalledFromNode1(RPCPacket* packet) {
+	...
+}
+
+void canBeCalledFromNode2(RPCPacket* packet) {
+	...
+}
+
+// this will be called when Node.js client is connected to the board
+void registerMethods() {
+	transport.on("command1", canBeCalledFromNode1);
+	transport.on("command2", canBeCalledFromNode2);
+}
+
+void setup() {
+	// don't forget to initialize Serial
+	Serial.begin(115200);
+	// initialize RPCTransport
+	transport.begin(registerMethods);
+}
+```
