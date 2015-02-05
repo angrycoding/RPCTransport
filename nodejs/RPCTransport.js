@@ -21,7 +21,6 @@ const RPC_CMD_RET = 0x30;
 const RPC_CMD_CALL = 0x40;
 const RPC_COMMAND_NOTIFY = 0x50;
 
-
 function waitConnection(serialPort) {
 	serialPort.open(function(error) {
 		if (error) setTimeout(
@@ -84,34 +83,25 @@ function createPacket() {
 
 
 function Transport(comName, baudRate) {
+	if (this instanceof Transport) {
 
-	var self = this;
+		var self = this;
 
-	this.buffer = [];
-	this.argCount = 0;
-	this.argValues = [];
-	this.state = RPC_START;
-	this.bindings = {};
+		this.buffer = [];
+		this.argCount = 0;
+		this.argValues = [];
+		this.state = RPC_START;
+		this.bindings = {};
 
-	var serialPort = new SerialPort(comName, {baudRate: baudRate}, false);
+		var serialPort = new SerialPort(comName, {baudRate: baudRate}, false);
 
-	serialPort.on('data', function(data) { self.processIncoming(data); });
+		serialPort.on('open', function() { serialPort.write(createPacket(RPC_CMD_READY)); });
+		serialPort.on('data', function(data) { self.processIncoming(data); });
+		serialPort.on('close', function() {});
 
-	serialPort.on('open', function() {
-		serialPort.write(createPacket(RPC_CMD_READY));
-		// serialPort.emit('data', createPacket(RPC_CMD_BIND, "changeState", 0));
-		// serialPort.emit('data', createPacket(RPC_CMD_BIND, "hello", 1));
-		// serialPort.emit('data', createPacket(RPC_CMD_READY));
-		// serialPort.emit('data', createPacket(RPC_CMD_CALL, "someNodeJSMethod", 1, 2, 3));
-	});
+		waitConnection(this.serialPort = serialPort);
 
-	serialPort.on('close', function() {
-		// this.canSend = false;
-	});
-
-
-	waitConnection(this.serialPort = serialPort);
-
+	} else return new Transport(comName, baudRate);
 }
 
 Transport.prototype = Object.create(EventEmitter.prototype);

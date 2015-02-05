@@ -1,8 +1,21 @@
 var RPCTransport = require('../nodejs/RPCTransport.js');
-var transport = new RPCTransport('/dev/cu.usbserial-A965DFR7', 115200);
 
+//'/dev/cu.usbserial-A965DFR7'
+// /dev/cu.Bluetooth-Modem
 
 var io = require('socket.io')(9999);
+var transport = RPCTransport('/dev/cu.Bluetooth-Incoming-Port', 115200);
+
+transport.on('dht11', function(args, ret) {
+	io.sockets.emit('dht11', args, ret);
+});
+
+transport.on('bmp180', function(args, ret) {
+	io.sockets.emit('bmp180', args, ret);
+});
+
+
+/*
 
 io.on('connect', function(socket) {
 
@@ -27,3 +40,4 @@ io.on('connect', function(socket) {
 	});
 
 });
+*/
