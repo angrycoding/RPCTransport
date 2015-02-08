@@ -7,10 +7,6 @@ var mouse = robot.getMousePos();
 var io = require('socket.io')(9999);
 
 
-
-
-io.on('connect', function(socket) {
-
 	var lastCode = 0;
 	var timeout = 0;
 
@@ -46,27 +42,26 @@ io.on('connect', function(socket) {
 	}, 0);
 
 	transport.on('vcnl', function(args, ret) {
-		socket.emit('vcnl', args, ret);
+		io.sockets.emit('vcnl', args, ret);
 	});
 
 	transport.on('dht11', function(args, ret) {
-		socket.emit('dht11', args, ret);
+		io.sockets.emit('dht11', args, ret);
 	});
 
 	transport.on('bmp180', function(args, ret) {
-		socket.emit('bmp180', args, ret);
+		io.sockets.emit('bmp180', args, ret);
 	});
 
 	transport.on('changed', function(args, ret) {
-		socket.emit('changed', args, ret);
+		io.sockets.emit('changed', args, ret);
 	});
 
-	socket.on('rpc:call', function(name, args, ret) {
-		transport.call(name, args, ret);
-	});
+	// socket.on('rpc:call', function(name, args, ret) {
+	// 	transport.call(name, args, ret);
+	// });
 
-	socket.on('rpc:notify', function(name, args, ret) {
-		transport.notify(name, args, ret);
-	});
+	// socket.on('rpc:notify', function(name, args, ret) {
+	// 	transport.notify(name, args, ret);
+	// });
 
-});
