@@ -1,10 +1,13 @@
 var RPCTransport = require('../nodejs/RPCTransport.js');
 var transport = new RPCTransport('/dev/cu.usbserial-A965DFR7', 115200);
 var robot = require("robotjs");
-
 var mouse = robot.getMousePos();
 
+
 var io = require('socket.io')(9999);
+
+
+
 
 io.on('connect', function(socket) {
 
