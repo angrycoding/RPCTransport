@@ -21,6 +21,7 @@
 
 	window.onload = function () {
 
+
 		var temperature = [];
 		var humidity = [];
 		var pressure = [];
@@ -60,6 +61,15 @@
 		var hum = 0;
 		var press = 0;
 
+		socket.on('tsop', function(args, ret) {
+
+			if (args[0] === -119401192)
+				document.body.innerHTML = '0';
+			else if (args[0] === 872930847)
+				document.body.innerHTML = 1;
+			ret();
+		});
+
 		socket.on('dht11', function(args, ret) {
 			temp = args[0];
 			hum = args[1];
@@ -71,6 +81,12 @@
 			ret();
 		});
 
+		socket.on('vcnl', function(args, ret) {
+			temp = args[0];
+			press = args[1];
+			ret();
+		});
+
 
 		setInterval(function() {
 
@@ -78,7 +94,6 @@
 
 			temperature.push({x: time, y: temp});
 			pressure.push({x: time, y: press});
-			// humidity.push({x: time, y: hum});
 
 			chart.render();
 

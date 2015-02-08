@@ -5,12 +5,14 @@
 #define RPC_BOOL 1
 #define RPC_FLOAT 2
 #define RPC_INT 3
-#define RPC_STRING 4
-#define RPC_START 5
-#define RPC_ARGUMENTS 6
-#define RPC_ARGUMENT_START 7
-#define RPC_ARGUMENT_END 8
-#define RPC_END 9
+#define RPC_UINT 4
+#define RPC_STRING 5
+#define RPC_START 6
+#define RPC_ARGUMENTS 7
+#define RPC_ARGUMENT_START 8
+#define RPC_ARGUMENT_END 9
+#define RPC_END 10
+
 #define RPC_MAX_ARGS 16
 
 #include "RPCValue.h"
@@ -113,6 +115,15 @@ class RPCRequest {
 					goto start;
 				}
 
+				if (RPC_UINT == state) {
+					if (size < 4) return false;
+					char buffer[4];
+					stream->readBytes(buffer, 4);
+					pushInt(*reinterpret_cast<uint32_t*>(&buffer));
+					state = RPC_ARGUMENT_END;
+					goto start;
+				}
+
 				if (RPC_STRING == state) {
 					if (size - 1 < stream->peek()) return false;
 					char value[(size = stream->read()) + 1];
@@ -177,6 +188,13 @@ class RPCRequest {
 					goto writeArgument;
 				}
 
+				if (RPC_UINT == value->vType) {
+					byte buffer[5] = {RPC_UINT};
+					*reinterpret_cast<uint32_t*>(&buffer[1]) = value->vInt;
+					stream->write(buffer, 5);
+					goto writeArgument;
+				}
+
 				if (RPC_STRING == value->vType) {
 					const char* string = value->vString;
 					byte length = strlen(string);
@@ -210,6 +228,7 @@ class RPCRequest {
 		void pushBool(const bool value) { push(new RPCValue(value)); }
 		void pushFloat(const float value) { push(new RPCValue(value)); }
 		void pushInt(const int32_t value) { push(new RPCValue(value)); }
+		void pushUInt(const uint32_t value) { push(new RPCValue(value)); }
 		void pushString(const char value[]) { push(new RPCValue(value)); }
 		void pushValue(const RPCValue* value) { push(new RPCValue(value)); }
 		void pushValue(const RPCValue& value) { push(new RPCValue(value)); }
@@ -218,6 +237,7 @@ class RPCRequest {
 		void unshiftBool(const bool value) { unshift(new RPCValue(value)); }
 		void unshiftFloat(const float value) { unshift(new RPCValue(value)); }
 		void unshiftInt(const int32_t value) { unshift(new RPCValue(value)); }
+		void unshiftUInt(const uint32_t value) { unshift(new RPCValue(value)); }
 		void unshiftString(const char value[]) { unshift(new RPCValue(value)); }
 		void unshiftValue(const RPCValue* value) { unshift(new RPCValue(value)); }
 		void unshiftValue(const RPCValue& value) { unshift(new RPCValue(value)); }
@@ -247,6 +267,7 @@ class RPCRequest {
 		bool getBool(byte index, bool value = false) { return (index < count ? values[index]->getBool(value) : value); }
 		float getFloat(byte index, float value = 0) { return (index < count ? values[index]->getFloat(value) : value); }
 		int32_t getInt(byte index, int32_t value = 0) { return (index < count ? values[index]->getInt(value) : value); }
+		uint32_t getUInt(byte index, uint32_t value = 0) { return (index < count ? values[index]->getUInt(value) : value); }
 		const char* getString(byte index, const char value[] = "") { return (index < count ? values[index]->getString(value) : value); }
 		const RPCValue* getValue(byte index) { return (index < count ? values[index] : &nullValue); }
 

@@ -8,7 +8,7 @@ class RPCValue {
 	private:
 
 		byte vType;
-		union {bool vBool; float vFloat; int32_t vInt; char* vString;};
+		union { bool vBool; float vFloat; int32_t vInt; uint32_t vUInt; char* vString; };
 
 	public:
 
@@ -18,6 +18,8 @@ class RPCValue {
 		RPCValue(double value) { vType = RPC_FLOAT; vFloat = (float)value; }
 		RPCValue(int16_t value) { vType = RPC_INT; vInt = (int32_t)value; }
 		RPCValue(int32_t value) { vType = RPC_INT; vInt = value; }
+		RPCValue(uint16_t value) { vType = RPC_UINT; vUInt = (uint32_t)value; }
+		RPCValue(uint32_t value) { vType = RPC_UINT; vUInt = value; }
 		RPCValue(const char value[]) { vType = RPC_STRING; vString = strdup(value); }
 
 		RPCValue(const RPCValue* value) {
@@ -39,6 +41,7 @@ class RPCValue {
 		bool getBool(bool value = false) const { return (vType == RPC_BOOL ? vBool : value); }
 		float getFloat(float value = 0) const { return (vType == RPC_FLOAT ? vFloat : value); }
 		int32_t getInt(int32_t value = 0) const { return (vType == RPC_INT ? vInt : value); }
+		uint32_t getUInt(uint32_t value = 0) const { return (vType == RPC_UINT ? vUInt : value); }
 		const char* getString(const char value[] = "") const { return (vType == RPC_STRING ? vString : value); }
 
 };

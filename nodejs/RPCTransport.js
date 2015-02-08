@@ -8,12 +8,12 @@ const RPC_NULL = 0;
 const RPC_BOOL = 1;
 const RPC_FLOAT = 2;
 const RPC_INT = 3;
-const RPC_STRING = 4;
-
-const RPC_START = 5;
-const RPC_ARGUMENTS = 6;
-const RPC_ARGUMENT = 7;
-const RPC_END = 8;
+const RPC_UINT = 4;
+const RPC_STRING = 5;
+const RPC_START = 6;
+const RPC_ARGUMENTS = 7;
+const RPC_ARGUMENT = 8;
+const RPC_END = 9;
 
 const RPC_CMD_BIND = 0x10;
 const RPC_CMD_READY = 0x20;
@@ -208,6 +208,13 @@ Transport.prototype.processIncoming = function(data) {
 		case RPC_INT: {
 			if (available < 4) break loop;
 			argValues.push(new Buffer(buffer.splice(0, 4)).readInt32LE(0));
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
+			break;
+		}
+
+		case RPC_UINT: {
+			if (available < 4) break loop;
+			argValues.push(new Buffer(buffer.splice(0, 4)).readUInt32LE(0));
 			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
 			break;
 		}
