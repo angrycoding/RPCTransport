@@ -4,20 +4,20 @@
 	var socket = io.connect('http://localhost:9999');
 	var state = false;
 
-	socket.on('changed', function(args, ret) {
-		document.body.style.backgroundColor = (args[0] ? '' : 'red');
-		ret();
-	})
+	// socket.on('changed', function(args, ret) {
+	// 	document.body.style.backgroundColor = (args[0] ? '' : 'red');
+	// 	ret();
+	// })
 
-	function changeState(sender) {
-		socket.emit('rpc:call', 'toggleLed', [], function(state) {
+	function toggleLed(sender) {
+		socket.emit('toggleLed', function(state) {
 			sender.value = (state ? 'TURN OFF' : 'TURN ON');
 		});
 	}
 
-	function changeLed(state) {
-		socket.emit('rpc:notify', 'changeLed', state);
-	}
+	// function changeLed(state) {
+	// 	socket.emit('rpc:notify', 'changeLed', state);
+	// }
 
 	window.onload = function () {
 
@@ -129,16 +129,19 @@
 
 		}, 100);
 
-
 	}
 
 </script>
 
-<input type="button" value="change state" onclick="changeState(this)" />
-<input type="button" value="TURN ON" onclick="changeLed(true)" />
-<input type="button" value="TURN OFF" onclick="changeLed(false)" />
+
 <script type="text/javascript" src="http://canvasjs.com/assets/script/canvasjs.min.js"></script>
 
 <div id="gasChartContainer" style="position: absolute; left: 0px; top: 0px; width: 50%; height: 50%;"></div>
 <div id="pressureChartContainer" style="position: absolute; right: 0px; top: 0px; width: 50%; height: 50%;"></div>
 <div id="temperatureChartContainer" style="position: absolute; left: 0px; bottom: 0px; width: 50%; height: 50%;"></div>
+
+<div style="position: absolute">
+	<input type="button" value="change state" onclick="toggleLed(this)" />
+	<input type="button" value="TURN ON" onclick="changeLed(true)" />
+	<input type="button" value="TURN OFF" onclick="changeLed(false)" />
+</div>

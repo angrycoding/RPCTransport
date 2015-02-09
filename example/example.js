@@ -50,9 +50,6 @@ transport.on('bmp180', function(args, ret) {
 	io.sockets.emit('bmp180', args);
 });
 
-
-
-
 transport.on('vcnl', function(args, ret) {
 	io.sockets.emit('vcnl', args, ret);
 });
@@ -62,15 +59,12 @@ transport.on('dht11', function(args, ret) {
 	io.sockets.emit('dht11', args, ret);
 });
 
-// transport.on('changed', function(args, ret) {
-// 	io.sockets.emit('changed', args, ret);
-// });
+io.on('connect', function(socket) {
 
-// socket.on('rpc:call', function(name, args, ret) {
-// 	transport.call(name, args, ret);
-// });
+	socket.on('toggleLed', function(ret) {
+		transport.call('toggleLed', [], function() {
+			ret.apply(this, arguments);
+		});
+	});
 
-// socket.on('rpc:notify', function(name, args, ret) {
-// 	transport.notify(name, args, ret);
-// });
-
+});
