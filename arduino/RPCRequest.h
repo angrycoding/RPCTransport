@@ -4,14 +4,18 @@
 #define RPC_NULL 0
 #define RPC_BOOL 1
 #define RPC_FLOAT 2
-#define RPC_INT 3
-#define RPC_UINT 4
-#define RPC_STRING 5
-#define RPC_START 6
-#define RPC_ARGUMENTS 7
-#define RPC_ARGUMENT_START 8
-#define RPC_ARGUMENT_END 9
-#define RPC_END 10
+#define RPC_INT8 3
+#define RPC_INT16 4
+#define RPC_INT32 5
+#define RPC_UINT8 6
+#define RPC_UINT16 7
+#define RPC_UINT32 8
+#define RPC_STRING 9
+#define RPC_START 10
+#define RPC_ARGUMENTS 11
+#define RPC_ARGUMENT_START 12
+#define RPC_ARGUMENT_END 13
+#define RPC_END 14
 
 #define RPC_MAX_ARGS 16
 
@@ -106,20 +110,54 @@ class RPCRequest {
 					goto start;
 				}
 
-				if (RPC_INT == state) {
-					if (size < 4) return false;
-					char buffer[4];
-					stream->readBytes(buffer, 4);
-					pushInt(*reinterpret_cast<int32_t*>(&buffer));
+				if (RPC_INT8 == state) {
+					char buffer[1];
+					stream->readBytes(buffer, 1);
+					pushInt8(*reinterpret_cast<int8_t*>(&buffer));
 					state = RPC_ARGUMENT_END;
 					goto start;
 				}
 
-				if (RPC_UINT == state) {
+				if (RPC_INT16 == state) {
+					if (size < 2) return false;
+					char buffer[2];
+					stream->readBytes(buffer, 2);
+					pushInt16(*reinterpret_cast<int16_t*>(&buffer));
+					state = RPC_ARGUMENT_END;
+					goto start;
+				}
+
+				if (RPC_INT32 == state) {
 					if (size < 4) return false;
 					char buffer[4];
 					stream->readBytes(buffer, 4);
-					pushInt(*reinterpret_cast<uint32_t*>(&buffer));
+					pushInt32(*reinterpret_cast<int32_t*>(&buffer));
+					state = RPC_ARGUMENT_END;
+					goto start;
+				}
+
+				if (RPC_UINT8 == state) {
+					char buffer[1];
+					stream->readBytes(buffer, 1);
+					pushUInt8(*reinterpret_cast<uint8_t*>(&buffer));
+					state = RPC_ARGUMENT_END;
+					goto start;
+				}
+
+				if (RPC_UINT16 == state) {
+					if (size < 2) return false;
+					char buffer[2];
+					stream->readBytes(buffer, 2);
+					pushUInt16(*reinterpret_cast<uint16_t*>(&buffer));
+					state = RPC_ARGUMENT_END;
+					goto start;
+				}
+
+				if (RPC_UINT32 == state) {
+					if (size < 4) return false;
+					char buffer[4];
+					stream->readBytes(buffer, 4);
+					pushUInt32(*reinterpret_cast<uint32_t*>(&buffer));
 					state = RPC_ARGUMENT_END;
 					goto start;
 				}
@@ -163,7 +201,6 @@ class RPCRequest {
 
 				value = values[c++];
 
-
 				if (RPC_NULL == value->vType) {
 					stream->write((byte)RPC_NULL);
 					goto writeArgument;
@@ -181,16 +218,44 @@ class RPCRequest {
 					goto writeArgument;
 				}
 
-				if (RPC_INT == value->vType) {
-					byte buffer[5] = {RPC_INT};
-					*reinterpret_cast<int32_t*>(&buffer[1]) = value->vInt;
+				if (RPC_INT8 == value->vType) {
+					byte buffer[2] = {RPC_INT8};
+					*reinterpret_cast<int8_t*>(&buffer[1]) = value->vInt8;
+					stream->write(buffer, 2);
+					goto writeArgument;
+				}
+
+				if (RPC_INT16 == value->vType) {
+					byte buffer[3] = {RPC_INT16};
+					*reinterpret_cast<int16_t*>(&buffer[1]) = value->vInt16;
+					stream->write(buffer, 3);
+					goto writeArgument;
+				}
+
+				if (RPC_INT32 == value->vType) {
+					byte buffer[5] = {RPC_INT32};
+					*reinterpret_cast<int32_t*>(&buffer[1]) = value->vInt32;
 					stream->write(buffer, 5);
 					goto writeArgument;
 				}
 
-				if (RPC_UINT == value->vType) {
-					byte buffer[5] = {RPC_UINT};
-					*reinterpret_cast<uint32_t*>(&buffer[1]) = value->vInt;
+				if (RPC_UINT8 == value->vType) {
+					byte buffer[2] = {RPC_UINT8};
+					*reinterpret_cast<uint8_t*>(&buffer[1]) = value->vUInt8;
+					stream->write(buffer, 2);
+					goto writeArgument;
+				}
+
+				if (RPC_UINT16 == value->vType) {
+					byte buffer[3] = {RPC_UINT16};
+					*reinterpret_cast<uint16_t*>(&buffer[1]) = value->vUInt16;
+					stream->write(buffer, 3);
+					goto writeArgument;
+				}
+
+				if (RPC_UINT32 == value->vType) {
+					byte buffer[5] = {RPC_UINT32};
+					*reinterpret_cast<uint32_t*>(&buffer[1]) = value->vUInt32;
 					stream->write(buffer, 5);
 					goto writeArgument;
 				}
@@ -204,7 +269,6 @@ class RPCRequest {
 					stream->write(buffer, 2 + length);
 					goto writeArgument;
 				}
-
 
 			}
 
@@ -227,8 +291,12 @@ class RPCRequest {
 		void pushNull() { push(new RPCValue()); }
 		void pushBool(const bool value) { push(new RPCValue(value)); }
 		void pushFloat(const float value) { push(new RPCValue(value)); }
-		void pushInt(const int32_t value) { push(new RPCValue(value)); }
-		void pushUInt(const uint32_t value) { push(new RPCValue(value)); }
+		void pushInt8(const int8_t value) { push(new RPCValue(value)); }
+		void pushInt16(const int16_t value) { push(new RPCValue(value)); }
+		void pushInt32(const int32_t value) { push(new RPCValue(value)); }
+		void pushUInt8(const uint8_t value) { push(new RPCValue(value)); }
+		void pushUInt16(const uint16_t value) { push(new RPCValue(value)); }
+		void pushUInt32(const uint32_t value) { push(new RPCValue(value)); }
 		void pushString(const char value[]) { push(new RPCValue(value)); }
 		void pushValue(const RPCValue* value) { push(new RPCValue(value)); }
 		void pushValue(const RPCValue& value) { push(new RPCValue(value)); }
@@ -236,8 +304,12 @@ class RPCRequest {
 		void unshiftNull() { unshift(new RPCValue()); }
 		void unshiftBool(const bool value) { unshift(new RPCValue(value)); }
 		void unshiftFloat(const float value) { unshift(new RPCValue(value)); }
-		void unshiftInt(const int32_t value) { unshift(new RPCValue(value)); }
-		void unshiftUInt(const uint32_t value) { unshift(new RPCValue(value)); }
+		void unshiftInt8(const int8_t value) { unshift(new RPCValue(value)); }
+		void unshiftInt16(const int16_t value) { unshift(new RPCValue(value)); }
+		void unshiftInt32(const int32_t value) { unshift(new RPCValue(value)); }
+		void unshiftUInt8(const uint8_t value) { unshift(new RPCValue(value)); }
+		void unshiftUInt16(const uint16_t value) { unshift(new RPCValue(value)); }
+		void unshiftUInt32(const uint32_t value) { unshift(new RPCValue(value)); }
 		void unshiftString(const char value[]) { unshift(new RPCValue(value)); }
 		void unshiftValue(const RPCValue* value) { unshift(new RPCValue(value)); }
 		void unshiftValue(const RPCValue& value) { unshift(new RPCValue(value)); }
@@ -266,8 +338,12 @@ class RPCRequest {
 		bool getType(byte index, byte type) { return (index < count ? values[index]->vType : RPC_NULL) == type; }
 		bool getBool(byte index, bool value = false) { return (index < count ? values[index]->getBool(value) : value); }
 		float getFloat(byte index, float value = 0) { return (index < count ? values[index]->getFloat(value) : value); }
-		int32_t getInt(byte index, int32_t value = 0) { return (index < count ? values[index]->getInt(value) : value); }
-		uint32_t getUInt(byte index, uint32_t value = 0) { return (index < count ? values[index]->getUInt(value) : value); }
+		int8_t getInt8(byte index, int8_t value = 0) { return (index < count ? values[index]->getInt8(value) : value); }
+		int16_t getInt16(byte index, int16_t value = 0) { return (index < count ? values[index]->getInt16(value) : value); }
+		int32_t getInt32(byte index, int32_t value = 0) { return (index < count ? values[index]->getInt32(value) : value); }
+		uint8_t getUInt8(byte index, uint8_t value = 0) { return (index < count ? values[index]->getUInt8(value) : value); }
+		uint16_t getUInt16(byte index, uint16_t value = 0) { return (index < count ? values[index]->getUInt16(value) : value); }
+		uint32_t getUInt32(byte index, uint32_t value = 0) { return (index < count ? values[index]->getUInt32(value) : value); }
 		const char* getString(byte index, const char value[] = "") { return (index < count ? values[index]->getString(value) : value); }
 		const RPCValue* getValue(byte index) { return (index < count ? values[index] : &nullValue); }
 

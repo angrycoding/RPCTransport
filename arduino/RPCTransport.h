@@ -34,11 +34,11 @@ class RPCTransport: private RPCRequest {
 		byte processPacket(RPCRequest* packet) {
 
 			if (!packet->read(stream)) return 0;
-			byte command = packet->shiftValue().getInt(0);
+			byte command = packet->shiftValue().getUInt8(0);
 
 			if (command >= RPC_COMMAND_CALL) {
-				byte resultIndex, handlerIndex = packet->shiftValue().getInt(handlerCount);
-				if (RPC_COMMAND_CALL == command) resultIndex = packet->shiftValue().getInt();
+				byte resultIndex, handlerIndex = packet->shiftValue().getUInt8(handlerCount);
+				if (RPC_COMMAND_CALL == command) resultIndex = packet->shiftValue().getUInt8();
 				if (handlerIndex < handlerCount) {
 					byte oldTransportState = transportState;
 					transportState = RPC_STATE_HANDLING;
@@ -46,8 +46,8 @@ class RPCTransport: private RPCRequest {
 					transportState = oldTransportState;
 				}
 				if (RPC_COMMAND_CALL == command) {
-					packet->unshiftInt(resultIndex);
-					packet->unshiftInt(RPC_COMMAND_RET);
+					packet->unshiftUInt8(resultIndex);
+					packet->unshiftUInt8(RPC_COMMAND_RET);
 					packet->write(stream);
 				}
 			}
@@ -73,7 +73,7 @@ class RPCTransport: private RPCRequest {
 				transportState = RPC_STATE_STARTING;
 				while (handlerCount) handlers[--handlerCount] = NULL;
 				if (handler != NULL) (bindHandlers = handler)();
-				clear(), pushInt(RPC_COMMAND_READY), write(stream);
+				clear(), pushUInt8(RPC_COMMAND_READY), write(stream);
 				transportState = RPC_STATE_RECEIVING;
 			}
 		}
@@ -81,9 +81,9 @@ class RPCTransport: private RPCRequest {
 		void on(const char value[], Handler handler) {
 			if (RPC_STATE_STARTING == transportState && handler != NULL) {
 				clear(), reserve(3);
-				pushInt(RPC_COMMAND_BIND);
+				pushUInt8(RPC_COMMAND_BIND);
 				pushString(value);
-				pushInt(handlerCount);
+				pushUInt8(handlerCount);
 				write(stream);
 				handlers[handlerCount++] = handler;
 			}
@@ -101,7 +101,7 @@ class RPCTransport: private RPCRequest {
 				while (state != RPC_START) processPacket(this);
 				request.reserve(count);
 				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
-				request.unshiftInt(RPC_COMMAND_CALL), request.write(stream);
+				request.unshiftUInt8(RPC_COMMAND_CALL), request.write(stream);
 				while (processPacket(&request) != RPC_COMMAND_RET);
 			}
 			return request;
@@ -111,7 +111,7 @@ class RPCTransport: private RPCRequest {
 			if (transportState >= RPC_STATE_RECEIVING) {
 				RPCRequest request; request.reserve(count);
 				for (byte c = 0; c < count; ++c) request.pushValue(args[c]);
-				request.unshiftInt(RPC_COMMAND_NOTIFY), request.write(stream);
+				request.unshiftUInt8(RPC_COMMAND_NOTIFY), request.write(stream);
 			}
 		}
 
