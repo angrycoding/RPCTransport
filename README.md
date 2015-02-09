@@ -16,7 +16,7 @@ Provides easy way to organize two - way communication between Arduino and Node.j
 RPCTransport transport(&Serial);
 
 // used to set LED state
-void setState(RPCPacket* packet) {
+void setState(RPCRequest* packet) {
 	// get desired state
 	bool state = packet->getBool(0);
 	// write LED state
@@ -26,7 +26,7 @@ void setState(RPCPacket* packet) {
 }
 
 // used to get LED state
-void getState(RPCPacket* packet) {
+void getState(RPCRequest* packet) {
 	// clear request arguments
 	packet->clear();
 	// read LED state
@@ -63,11 +63,11 @@ RPCTransport transport(&Serial);
 ```
 When you ready to receive (or send) commands you call **transport.begin** and pass optional argument - callback function where you can register functions that will be available for calling from Node.js side (but don't forget to initialize serial communication first). Register public methods by calling **transport.on**, note that this method can only be called inside of the callback that is passed into **transport.begin**, attempt to call it in any other place won't take any effect. First argument is the name of your method (will be used to call it from Node.js), second argument is callback function, that will be executed when it's called:
 ```c++
-void canBeCalledFromNode1(RPCPacket* packet) {
+void canBeCalledFromNode1(RPCRequest* packet) {
 	...
 }
 
-void canBeCalledFromNode2(RPCPacket* packet) {
+void canBeCalledFromNode2(RPCRequest* packet) {
 	...
 }
 
@@ -93,7 +93,7 @@ void serialEvent() {
 ```
 If you do everything right, Node.js can now execute methods on Arduino side, reading passed arguments is quite straightforward:
 ```c++
-void canBeCalledFromNode1(RPCPacket* packet) {
+void canBeCalledFromNode1(RPCRequest* packet) {
 	// reading first argument as boolean
 	bool a1 = packet->getBool(0);
 	// reading second argument as float
@@ -106,7 +106,7 @@ void canBeCalledFromNode1(RPCPacket* packet) {
 ```
 Retrieving result is a bit tricky, same pointer is used to read arguments and to forward result to the caller. Before writing result, don't forget to clear the packet, otherwise everthing that you've received as an argument will be passed into result (echo mode):
 ```c++
-void canBeCalledFromNode1(RPCPacket* packet) {
+void canBeCalledFromNode1(RPCRequest* packet) {
 	// read first argument as boolean
 	bool value = packet->getBool(0);
 	// if you don't do it, result will contain original request
@@ -126,7 +126,7 @@ More realistic example, let's create method that will allow Node.js to call digi
 RPCTransport transport(&Serial);
 
 // our digitalWrite implementation available to Node.js
-void myDigitalWrite(RPCPacket* packet) {
+void myDigitalWrite(RPCRequest* packet) {
 	// read pin number
 	byte pinNumber = packet->getInt(0);
 	// read pin state
