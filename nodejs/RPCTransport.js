@@ -7,13 +7,17 @@ const WAIT_INTERVAL = 250;
 const RPC_NULL = 0;
 const RPC_BOOL = 1;
 const RPC_FLOAT = 2;
-const RPC_INT = 3;
-const RPC_UINT = 4;
-const RPC_STRING = 5;
-const RPC_START = 6;
-const RPC_ARGUMENTS = 7;
-const RPC_ARGUMENT = 8;
-const RPC_END = 9;
+const RPC_INT8 = 3;
+const RPC_INT16 = 4;
+const RPC_INT32 = 5;
+const RPC_UINT8 = 6;
+const RPC_UINT16 = 7;
+const RPC_UINT32 = 8;
+const RPC_STRING = 9;
+const RPC_START = 10;
+const RPC_ARGUMENTS = 11;
+const RPC_ARGUMENT = 12;
+const RPC_END = 13;
 
 const RPC_CMD_BIND = 0x10;
 const RPC_CMD_READY = 0x20;
@@ -56,7 +60,7 @@ function createPacket() {
 				buffer.push(RPC_FLOAT);
 				temp.writeFloatLE(arg, 0);
 			} else {
-				buffer.push(RPC_INT);
+				buffer.push(RPC_INT32);
 				temp.writeInt32LE(arg, 0);
 			}
 			Array.prototype.push.apply(buffer, temp);
@@ -195,14 +199,41 @@ Transport.prototype.processIncoming = function(data) {
 			break;
 		}
 
-		case RPC_INT: {
+		case RPC_INT8: {
+			argValues.push(new Buffer(buffer.splice(0, 1)).readInt8(0));
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
+			break;
+		}
+
+		case RPC_INT16: {
+			if (available < 2) break loop;
+			argValues.push(new Buffer(buffer.splice(0, 2)).readInt16LE(0));
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
+			break;
+		}
+
+		case RPC_INT32: {
 			if (available < 4) break loop;
 			argValues.push(new Buffer(buffer.splice(0, 4)).readInt32LE(0));
 			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
 			break;
 		}
 
-		case RPC_UINT: {
+
+		case RPC_UINT8: {
+			argValues.push(new Buffer(buffer.splice(0, 1)).readUInt8(0));
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
+			break;
+		}
+
+		case RPC_UINT16: {
+			if (available < 2) break loop;
+			argValues.push(new Buffer(buffer.splice(0, 2)).readUInt16LE(0));
+			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);
+			break;
+		}
+
+		case RPC_UINT32: {
 			if (available < 4) break loop;
 			argValues.push(new Buffer(buffer.splice(0, 4)).readUInt32LE(0));
 			state = (argValues.length < argCount ? RPC_ARGUMENT : RPC_END);

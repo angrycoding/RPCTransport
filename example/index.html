@@ -22,13 +22,13 @@
 	window.onload = function () {
 
 
-		var temperature = [];
-		var humidity = [];
+		var gases = [];
 		var pressure = [];
+		var temperature = [];
 
-		var chart = new CanvasJS.Chart("chartContainer",{
-			title: {text: "Температура и Влажность"},
-			height: 600,
+		var gasChart = new CanvasJS.Chart("gasChartContainer",{
+			title: {text: "Содержание газа"},
+			// height: 600,
 			axisX:{
 		        gridColor: "#CDCDCD" ,
 		        gridThickness: 1,
@@ -45,45 +45,68 @@
 
 			data: [{
 				type: "spline",
-				// markerType: 'none',
-				dataPoints: temperature
-			}, {
+				dataPoints: gases
+			}]
+		});
+
+		var pressureChart = new CanvasJS.Chart("pressureChartContainer",{
+			title: {text: "Атмосферное давление"},
+			// height: 600,
+			axisX:{
+		        gridColor: "#CDCDCD" ,
+		        gridThickness: 1,
+				labelFontSize: 10,
+		        valueFormatString: 'H:mm:ss'
+		      },
+
+			axisY:{
+				// interval: 10,
+				labelFontSize: 10,
+				gridThickness: 1,
+				gridColor: "#CDCDCD"
+			},
+
+			data: [{
 				type: "spline",
-				// markerType: 'none',
 				dataPoints: pressure
 			}]
 		});
 
-		var xVal = 0;
-		var dataLength = 500; // number of dataPoints visible at any point
+		var temperatureChart = new CanvasJS.Chart("temperatureChartContainer",{
+			title: {text: "Температура"},
+			// height: 600,
+			axisX:{
+		        gridColor: "#CDCDCD" ,
+		        gridThickness: 1,
+				labelFontSize: 10,
+		        valueFormatString: 'H:mm:ss'
+		      },
 
-		var temp = 0;
-		var hum = 0;
-		var press = 0;
+			axisY:{
+				// interval: 10,
+				labelFontSize: 10,
+				gridThickness: 1,
+				gridColor: "#CDCDCD"
+			},
 
-		socket.on('tsop', function(args, ret) {
-
-			if (args[0] === -119401192)
-				document.body.innerHTML = '0';
-			else if (args[0] === 872930847)
-				document.body.innerHTML = 1;
-			ret();
+			data: [{
+				type: "spline",
+				dataPoints: temperature
+			}]
 		});
 
-		socket.on('dht11', function(args, ret) {
-			temp = args[0];
-			hum = args[1];
-			ret();
+		var gas = 0;
+		var press = 0;
+		var temp = 0;
+		var dataLength = 500;
+
+		socket.on('gas', function(args, ret) {
+			gas = args[0];
 		});
 
 		socket.on('bmp180', function(args, ret) {
 			press = args[0];
-			ret();
-		});
-
-		socket.on('vcnl', function(args, ret) {
-			temp = args[0];
-			press = args[1];
+			temp = args[1];
 			ret();
 		});
 
@@ -92,17 +115,17 @@
 
 			var time = new Date();
 
-			temperature.push({x: time, y: temp});
+			gases.push({x: time, y: gas});
+			if (gases.length > dataLength) gases.shift();
+			gasChart.render();
+
 			pressure.push({x: time, y: press});
-
-			chart.render();
-
-			if (temperature.length > dataLength) temperature.shift();
 			if (pressure.length > dataLength) pressure.shift();
-			// if (humidity.length > dataLength) humidity.shift();
+			pressureChart.render();
 
-			// xVal++;
-
+			temperature.push({x: time, y: temp});
+			if (temperature.length > dataLength) temperature.shift();
+			temperatureChart.render();
 
 		}, 100);
 
@@ -116,5 +139,6 @@
 <input type="button" value="TURN OFF" onclick="changeLed(false)" />
 <script type="text/javascript" src="http://canvasjs.com/assets/script/canvasjs.min.js"></script>
 
-<div id="chartContainer" style="height: 300px; width:100%;">
-	</div>
+<div id="gasChartContainer" style="position: absolute; left: 0px; top: 0px; width: 50%; height: 50%;"></div>
+<div id="pressureChartContainer" style="position: absolute; right: 0px; top: 0px; width: 50%; height: 50%;"></div>
+<div id="temperatureChartContainer" style="position: absolute; left: 0px; bottom: 0px; width: 50%; height: 50%;"></div>
