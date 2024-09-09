@@ -1,3 +1,12 @@
+#  💜If you like my projects, you can support me.
+
+| Coin/Symbol | Network | Adress |
+|------|---------|--------|
+| Bitcoin (BTC) | BTC | 1LU7DtLiKkWe3aAXbhRhNAMUFdrapWuAHW |
+| Tether (USDT) | TRC20 | TK7f7TXozWVbkHxdArAJd2rELu725q1Ac5 |
+| Tether (USDT) | TON | UQDI4e7xm_B7O_REaYd5CoyEz1Ki08t0EPlUim022_K9B2xa |
+
+
 # Arduino <-> Node.js RPC transport
 
 Provides easy way to organize two - way communication between Arduino and Node.js, uses the serial port as transport layer. There are plenty of libraries that provides similar functionality, so what is the reason to create another one? Firstly I've tried the library called [Johnny-Five](https://github.com/rwaldron/johnny-five), well this library itself is quiet cool, but if you need to drive your Arduino using Node.js, it's very unlikely that you'd prefer to call low-level Arduino subroutines (such as pinMode, digitalWrite and so on), unless you are building something really weird, or you don't know C++ at all, so the only way for you is to use JavaScript to program Arduino. Second library that I've tried to use in order to accomplish my project, called [CmdMessenger](http://playground.arduino.cc/Code/CmdMessenger), this one looks more like what I actually need, but I couldn't use it because it has no Node.js integration + API looks quiet complicated to me (not in terms of understanding but in terms of usage). So I've come up with the idea to create my own library, with blackjack and hookers. So here is the list of features that in my opinion had to be done in order to make this library uber cool:
